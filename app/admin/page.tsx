@@ -59,7 +59,31 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id: string, status: string, app?: Application) => {
+    if (status === 'approved' && app) {
+      // Call API to auto-create contractor account
+      try {
+        const res = await fetch('/api/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            applicationId: id,
+            email: app.email,
+            name: app.name,
+            company: app.company
+          })
+        })
+        const result = await res.json()
+        if (result.error) {
+          alert('Error: ' + result.error + '\n\nPlease create user manually in Supabase Auth.')
+        } else {
+          alert('Success! Contractor account created.\nTemp password: ' + result.tempPassword + '\n\nShare this with the contractor.')
+        }
+      } catch (e) {
+        alert('Error creating account. Please create manually in Supabase.')
+      }
+    }
+    
     const { error } = await supabase
       .from('contractor_applications')
       .update({ status })
@@ -205,10 +229,10 @@ export default function AdminPage() {
                       {app.status === 'pending' && (
                         <div className="flex gap-2 justify-end">
                           <button
-                            onClick={() => updateStatus(app.id, 'approved')}
+                            onClick={() => updateStatus(app.id, 'approved', app)}
                             className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
                           >
-                            Approve
+                            Approve & Create
                           </button>
                           <button
                             onClick={() => updateStatus(app.id, 'rejected')}
