@@ -96,7 +96,7 @@ export default function Home() {
             <a href="#join" className="bg-primary text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700">
               Join Verified Network
             </a>
-            <a href="#how-it-works" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-50">
+            <a href="/about" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-50">
               Learn More
             </a>
           </div>
