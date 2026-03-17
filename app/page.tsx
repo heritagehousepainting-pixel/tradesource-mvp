@@ -62,9 +62,11 @@ export default function Home() {
       console.log('Supabase response:', { data, error })
       
       if (error) {
+        alert('Error: ' + error.message)
         console.error('Supabase error:', error)
         setFormStatus('Error: ' + error.message)
       } else {
+        alert('Success! Application submitted.')
         setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
         setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null, externalReviews: '' })
       }
