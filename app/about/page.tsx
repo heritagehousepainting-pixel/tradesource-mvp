@@ -20,10 +20,9 @@ export default function AboutPage() {
           </div>
           <div className="hidden md:flex gap-8 text-sm text-gray-600">
             <a href="/" className="hover:text-primary">Home</a>
-            <a href="#problem" className="hover:text-primary">Problem</a>
-            <a href="#how-it-works" className="hover:text-primary">How It Works</a>
+            <a href="#contractors" className="hover:text-primary">For Contractors</a>
+            <a href="#homeowners" className="hover:text-primary">For Homeowners</a>
             <a href="#verification" className="hover:text-primary">Verification</a>
-            <a href="#why-painting" className="hover:text-primary">Why Us</a>
           </div>
           <a href="/#join" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
             Join Network
@@ -38,186 +37,214 @@ export default function AboutPage() {
             TradeSource: The Verified Painting Network for Montgomery County, PA
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Trusted, verified painters connect for overflow jobs at fixed rates. 
-            Homeowners get free postings + instant AI pricing estimates.
+            A <strong>win-win</strong> for painters and homeowners. Verified contractors fill overflow jobs at fixed rates; 
+            homeowners get free postings + instant AI pricing. No middleman, no lead fees.
           </p>
         </div>
       </section>
 
       {/* The Problem */}
-      <section id="problem" className="py-16 px-4 bg-white">
+      <section className="py-12 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">The Problem</h2>
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-8">
-            <ul className="space-y-4">
-              <li className="flex gap-3">
-                <span className="text-red-500 text-xl">•</span>
-                <span className="text-gray-700">Delays from overloaded contractors turning away good work</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-red-500 text-xl">•</span>
-                <span className="text-gray-700">Unreliable subcontractors with no accountability</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-red-500 text-xl">•</span>
-                <span className="text-gray-700">Lack of transparency and verification</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-red-500 text-xl">•</span>
-                <span className="text-gray-700">Homeowners guessing at prices with no reliable benchmark</span>
-              </li>
-            </ul>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">The Problem We Solve</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-red-50 rounded-xl p-5">
+              <h3 className="font-semibold text-gray-900 mb-2">For Contractors</h3>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>• Turn away good work when overloaded</li>
+                <li>• Spend hours cold outreach for new leads</li>
+                <li>• Unpredictable income between jobs</li>
+              </ul>
+            </div>
+            <div className="bg-red-50 rounded-xl p-5">
+              <h3 className="font-semibold text-gray-900 mb-2">For Homeowners</h3>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>• Can't tell who's trustworthy</li>
+                <li>• No idea if pricing is fair</li>
+                <li>• Risk hiring unreliability</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-16 px-4 bg-gray-50">
+      {/* Contractors Section - Major */}
+      <section id="contractors" className="py-16 px-4 bg-blue-600">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">How It Works</h2>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Contractors */}
-            <div className="bg-blue-50 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">For Contractors</h3>
-              </div>
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
-                  <span className="text-gray-700">Get verified → post overflow painting jobs at your fixed rate</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
-                  <span className="text-gray-700">Interested verified subs apply → view their profiles, docs, reviews</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
-                  <span className="text-gray-700">Accept → complete job → leave internal review & stars</span>
-                </li>
-              </ol>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
             </div>
-
-            {/* Homeowners */}
-            <div className="bg-green-50 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
+            <h2 className="text-3xl font-bold text-white">For Subcontractors & Painters</h2>
+          </div>
+          
+          <div className="bg-white rounded-2xl p-8">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Turn Overload into Revenue</h3>
+                    <p className="text-sm text-gray-600">Access overflow painting jobs at your fixed rate — fill downtime without cold outreach.</p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">For Homeowners</h3>
+                <div className="flex gap-3">
+                  <span className="text-2xl">📅</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Pick Jobs That Fit Your Schedule</h3>
+                    <p className="text-sm text-gray-600">Choose jobs that match your availability and skills — no forced assignments.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Fixed-Rate Certainty</h3>
+                    <p className="text-sm text-gray-600">Know your earnings upfront — no haggling, no scope creep, predictable margins.</p>
+                  </div>
+                </div>
               </div>
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="bg-secondary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">1</span>
-                  <span className="text-gray-700">Post job details for free (no price needed)</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="bg-secondary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">2</span>
-                  <span className="text-gray-700">See interested verified painters who reviewed your job</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="bg-secondary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3</span>
-                  <span className="text-gray-700">Get instant AI pricing range based on Montgomery County data</span>
-                </li>
-              </ol>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <span className="text-2xl">🔗</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Verified Network Only</h3>
+                    <p className="text-sm text-gray-600">Connect with verified painters — see W-9, insurance, license, external reviews before accepting.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-2xl">⭐</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Build Your Reputation</h3>
+                    <p className="text-sm text-gray-600">Earn internal 1-5 star reviews — showcase Google/Yelp links on your profile.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <h3 className="font-bold text-gray-900">Free to Join (MVP)</h3>
+                    <p className="text-sm text-gray-600">No lead fees or subscriptions — we're a connector, not a middleman taking a cut.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex gap-3">
+                <span className="text-2xl">🏘️</span>
+                <div>
+                  <h3 className="font-bold text-gray-900">Local Montgomery County Focus</h3>
+                  <p className="text-sm text-gray-600">Nearby jobs mean faster response times, lower travel costs, and stronger community reputation.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Homeowners Section */}
+      <section id="homeowners" className="py-16 px-4 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">For Homeowners</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">📝</div>
+              <h3 className="font-bold text-gray-900 mb-2">Post for Free</h3>
+              <p className="text-sm text-gray-600">Post your painting job at no cost. No price needed — just describe what you need.</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">🤖</div>
+              <h3 className="font-bold text-gray-900 mb-2">Instant AI Pricing</h3>
+              <p className="text-sm text-gray-600">Get an AI-generated price range based on Montgomery County data — know what's fair.</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">✓</div>
+              <h3 className="font-bold text-gray-900 mb-2">Verified Pros</h3>
+              <p className="text-sm text-gray-600">See only verified, insured contractors with proven track records in your area.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Both Sides Win */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Why Both Sides Win</h2>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-blue-50 rounded-2xl p-8">
+              <h3 className="text-xl font-bold text-blue-900 mb-4">Contractors Get</h3>
+              <ul className="text-left space-y-3 text-gray-700">
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Steady work between projects</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> No cold calling or lead fees</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Predictable fixed-rate jobs</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Local jobs = less travel</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Reputation building</li>
+              </ul>
+            </div>
+            <div className="bg-green-50 rounded-2xl p-8">
+              <h3 className="text-xl font-bold text-green-900 mb-4">Homeowners Get</h3>
+              <ul className="text-left space-y-3 text-gray-700">
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Free to post, no obligation</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> AI pricing transparency</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Verified, insured pros only</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Quick responses from locals</li>
+                <li className="flex items-center gap-2"><span className="text-green-500">✓</span> Peace of mind</li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
       {/* Verification */}
-      <section id="verification" className="py-16 px-4 bg-white">
+      <section id="verification" className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Strict Verification</h2>
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-purple-50 rounded-xl p-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-900 mb-4">Required for All Contractors</h3>
               <ul className="space-y-2 text-gray-700">
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> W-9 (tax ID)
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Proof of Insurance (min $1M liability)
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Workers' Compensation
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Business License
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> External link (Google, Yelp, etc.)
-                </li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> W-9 (tax ID)</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Proof of Insurance ($1M+ liability)</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Workers' Compensation</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Business License</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Google/Yelp external link</li>
               </ul>
             </div>
-            <div className="bg-purple-50 rounded-xl p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Review Process</h3>
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="font-bold text-gray-900 mb-4">Ongoing Quality</h3>
               <ul className="space-y-2 text-gray-700">
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Manual review (initially)
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Internal 1-5 star reviews after each job
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> External score verification
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-600">✓</span> Re-verification annually
-                </li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Manual review (initially)</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Internal 1-5 star reviews</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> External score verification</li>
+                <li className="flex items-center gap-2"><span className="text-purple-600">✓</span> Annual re-verification</li>
               </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Painting & Montgomery County */}
-      <section id="why-painting" className="py-16 px-4 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Why Painting & Montgomery County First?</h2>
-          <div className="space-y-6 text-gray-700">
-            <p>
-              We started focused on painting to build <strong>real trust fast</strong>. 
-              By narrowing our scope, we can actually verify every contractor thoroughly 
-              and ensure quality matches for both sides.
-            </p>
-            <p>
-              Once we prove the model works in Montgomery County, we'll expand to 
-              other trades (drywall, flooring, HVAC) and nearby counties.
-            </p>
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <h3 className="font-bold text-gray-900 mb-3">Currently Serving Montgomery County, PA</h3>
-              <div className="flex flex-wrap gap-2">
-                {['Ambler', 'Blue Bell', 'Bryn Mawr', 'Conshohocken', 'Fort Washington', 'Gladwyne', 'Horsham', 'King of Prussia', 'Lansdale', 'Lower Gwynedd', 'Maple Glen', 'North Wales', 'Plymouth Meeting', 'Spring House', 'Willow Grove'].map(town => (
-                  <span key={town} className="bg-gray-100 px-3 py-1 rounded-full text-sm">{town}</span>
-                ))}
-              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Built by Local Expert */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Built by a Local Painting Company Owner</h2>
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8">
+      <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Built by a Local Painting Company Owner</h2>
             <p className="text-gray-700 mb-4">
               TradeSource wasn't built by software engineers who guessed at painting prices. 
-              It was built by someone who's actually done the work.
+              It was built by someone who's actually done the work in Montgomery County.
             </p>
             <p className="text-gray-700 mb-4">
               I know what it takes to paint a room right—from prep to final coat. 
-              I know typical pricing in Montgomery County (a standard interior room 
-              runs <strong>$500–$1,200</strong> depending on detail), realistic timelines, 
-              and what separates a pro from a weekend warrior.
+              I know typical pricing here (<strong>$500–$1,200</strong> for a standard interior room), 
+              realistic timelines, and what separates a pro from a weekend warrior.
             </p>
             <p className="text-gray-700">
               That's why I'm committed to <strong>legitimacy and fair fixed rates</strong>. 
@@ -233,7 +260,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Ready to Join the Verified Network?</h2>
           <p className="text-gray-400 mb-8">
-            Whether you're a contractor looking for overflow work or a homeowner needing a trusted painter.
+            Whether you're a painter looking for overflow work or a homeowner needing a trusted pro.
           </p>
           <a 
             href="/#join" 
@@ -258,6 +285,7 @@ export default function AboutPage() {
           </div>
           <div className="flex gap-6 text-sm text-gray-400">
             <a href="/" className="hover:text-white">Home</a>
+            <a href="/about" className="hover:text-white">About</a>
             <a href="/#join" className="hover:text-white">Join</a>
           </div>
         </div>
