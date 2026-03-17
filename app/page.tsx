@@ -349,27 +349,11 @@ export default function Home() {
                     placeholder="(215) 555-0123"
                   />
                 </div>
-                <div className="md:col-span-2">
-                  <div className="bg-blue-50 rounded-xl p-4 mb-4">
-                    <h3 className="font-bold text-gray-900 mb-3 text-sm">📋 What You Need to Apply</h3>
-                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
-                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>W-9</strong> (Tax ID)</span></div>
-                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Insurance</strong> ($1M+)</span></div>
-                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Contractors License</strong></span></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Have these ready — we'll verify before approving.</p>
-                  </div>
-                  
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ☑ I have all documents ready to share *
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">We'll ask for your documents after reviewing your application.</p>
-                </div>
                 
-                <div className="md:col-span-2 mt-2">
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ☑ External Reviews *
-                    <span className="text-gray-500 font-normal"> - At least one link (Google, Yelp, etc.)</span>
+                    External Reviews Link *
+                    <span className="text-gray-500 font-normal"> (Google, Yelp, etc.)</span>
                   </label>
                   <input
                     type="text"
