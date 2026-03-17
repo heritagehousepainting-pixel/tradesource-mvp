@@ -45,8 +45,10 @@ export default function Home() {
     setIsSubmitting(true)
     
     try {
+      console.log('Submitting application with:', { name: formData.name, email: formData.email, company: formData.company })
+      
       // Save contractor application to Supabase
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('contractor_applications')
         .insert({
           name: formData.name,
@@ -57,16 +59,18 @@ export default function Home() {
           status: 'pending',
         })
       
+      console.log('Supabase response:', { data, error })
+      
       if (error) {
         console.error('Supabase error:', error)
-        setFormStatus('Something went wrong. Please try again.')
+        setFormStatus('Error: ' + error.message)
       } else {
         setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
         setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null, externalReviews: '' })
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Submission error:', err)
-      setFormStatus('An error occurred. Please try again.')
+      setFormStatus('Error: ' + (err?.message || 'Unknown error'))
     } finally {
       setIsSubmitting(false)
     }
