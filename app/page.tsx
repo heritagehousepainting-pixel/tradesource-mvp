@@ -34,7 +34,6 @@ export default function Home() {
     email: '',
     company: '',
     phone: '',
-    verificationDoc: null as File | null,
     externalReviews: ''
   })
   const [formStatus, setFormStatus] = useState('')
@@ -68,19 +67,13 @@ export default function Home() {
       } else {
         alert('Success! Application submitted.')
         setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
-        setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null, externalReviews: '' })
+        setFormData({ name: '', email: '', company: '', phone: '', externalReviews: '' })
       }
     } catch (err: any) {
       console.error('Submission error:', err)
       setFormStatus('Error: ' + (err?.message || 'Unknown error'))
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, verificationDoc: e.target.files[0] })
     }
   }
 
@@ -364,40 +357,13 @@ export default function Home() {
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Insurance</strong> ($1M+)</span></div>
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Contractors License</strong></span></div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG • Max 10MB each</p>
+                    <p className="text-xs text-gray-500 mt-2">Have these ready — we'll verify before approving.</p>
                   </div>
                   
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload All Documents *</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
-                    <input
-                      type="file"
-                      required
-                      accept=".pdf,.doc,.docx,.jpg,.png"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="verification-doc"
-                    />
-                    <label htmlFor="verification-doc" className="cursor-pointer">
-                      {formData.verificationDoc ? (
-                        <div className="flex items-center justify-center gap-2 text-primary">
-                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="font-medium">{formData.verificationDoc.name}</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <p className="text-gray-600">
-                            <span className="text-primary font-medium">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-gray-400 text-sm mt-1">PDF, DOC, JPG, PNG (max 10MB)</p>
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ☑ I have all documents ready to share *
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">We'll ask for your documents after reviewing your application.</p>
                 </div>
                 
                 <div className="md:col-span-2 mt-2">
