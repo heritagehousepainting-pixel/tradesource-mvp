@@ -47,34 +47,36 @@ export default function Home() {
     setIsSubmitting(true)
     
     try {
-      // Upload files first
+      // Upload files first (if present)
       let w9Path = null
       let insurancePath = null
       
       const filePrefix = formData.email + '_' + Date.now()
       
       if (w9File) {
-        const { data: w9Data, error: w9Error } = await supabase.storage
-          .from('contractor-docs')
-          .upload(filePrefix + '_w9.' + w9File.name.split('.').pop(), w9File)
-        if (w9Error) {
-          alert('Error uploading W-9: ' + w9Error.message)
-          setIsSubmitting(false)
-          return
+        try {
+          const { data: w9Data, error: w9Error } = await supabase.storage
+            .from('contractor-docs')
+            .upload(filePrefix + '_w9.' + w9File.name.split('.').pop(), w9File)
+          if (!w9Error && w9Data) {
+            w9Path = w9Data.path
+          }
+        } catch (e) {
+          console.log('W-9 upload skipped')
         }
-        w9Path = w9Data.path
       }
       
       if (insuranceFile) {
-        const { data: insData, error: insError } = await supabase.storage
-          .from('contractor-docs')
-          .upload(filePrefix + '_insurance.' + insuranceFile.name.split('.').pop(), insuranceFile)
-        if (insError) {
-          alert('Error uploading insurance: ' + insError.message)
-          setIsSubmitting(false)
-          return
+        try {
+          const { data: insData, error: insError } = await supabase.storage
+            .from('contractor-docs')
+            .upload(filePrefix + '_insurance.' + insuranceFile.name.split('.').pop(), insuranceFile)
+          if (!insError && insData) {
+            insurancePath = insData.path
+          }
+        } catch (e) {
+          console.log('Insurance upload skipped')
         }
-        insurancePath = insData.path
       }
 
       // Save application to Supabase
@@ -380,22 +382,20 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">W-9 Tax ID *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">W-9 Tax ID (optional)</label>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.png"
-                    required
                     onChange={(e) => setW9File(e.target.files?.[0] || null)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   {w9File && <p className="text-xs text-green-600 mt-1">✓ {w9File.name}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Proof of Insurance *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Proof of Insurance (optional)</label>
                   <input
                     type="file"
                     accept=".pdf,.jpg,.png"
-                    required
                     onChange={(e) => setInsuranceFile(e.target.files?.[0] || null)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
