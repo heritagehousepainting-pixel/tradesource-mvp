@@ -37,8 +37,6 @@ export default function Home() {
     license_number: '',
     external_reviews: ''
   })
-  const [w9File, setW9File] = useState<File | null>(null)
-  const [insuranceFile, setInsuranceFile] = useState<File | null>(null)
   const [formStatus, setFormStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -46,32 +44,6 @@ export default function Home() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    let w9Path: string | null = null
-    let insurancePath: string | null = null
-    
-    // Try to upload files
-    try {
-      if (w9File) {
-        const w9Ext = w9File.name.split('.').pop()
-        const w9Name = `${formData.email.replace(/[^a-zA-Z0-9]/g, '_')}_w9_${Date.now()}.${w9Ext}`
-        const { data: w9Data, error: w9Error } = await supabase.storage
-          .from('contractor-docs')
-          .upload(w9Name, w9File)
-        if (!w9Error && w9Data) w9Path = w9Data.path
-      }
-      
-      if (insuranceFile) {
-        const insExt = insuranceFile.name.split('.').pop()
-        const insName = `${formData.email.replace(/[^a-zA-Z0-9]/g, '_')}_insurance_${Date.now()}.${insExt}`
-        const { data: insData, error: insError } = await supabase.storage
-          .from('contractor-docs')
-          .upload(insName, insuranceFile)
-        if (!insError && insData) insurancePath = insData.path
-      }
-    } catch (uploadError) {
-      console.log('Upload attempted')
-    }
-
     try {
       // Save application to Supabase
       const { data, error } = await supabase
@@ -83,8 +55,6 @@ export default function Home() {
           phone: formData.phone || null,
           license_number: formData.license_number || null,
           external_reviews: formData.external_reviews || null,
-          w9_doc_path: w9Path,
-          insurance_doc_path: insurancePath,
           status: 'pending',
         })
       
@@ -93,8 +63,6 @@ export default function Home() {
       } else {
         alert('Success! Application submitted. We will verify your info and contact you within 48 hours.')
         setFormData({ name: '', email: '', company: '', phone: '', license_number: '', external_reviews: '' })
-        setW9File(null)
-        setInsuranceFile(null)
       }
     } catch (err: any) {
       alert('Error: ' + (err?.message || 'Unknown error'))
@@ -373,26 +341,6 @@ export default function Home() {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="(215) 555-0123"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload W-9 *</label>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.png"
-                    required
-                    onChange={(e) => setW9File(e.target.files?.[0] || null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Insurance *</label>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.png"
-                    required
-                    onChange={(e) => setInsuranceFile(e.target.files?.[0] || null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
