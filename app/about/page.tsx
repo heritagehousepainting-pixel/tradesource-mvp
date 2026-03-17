@@ -243,8 +243,8 @@ export default function AboutPage() {
             </p>
             <p className="text-gray-700 mb-4">
               I know what it takes to paint a room right—from prep to final coat. 
-              I know typical pricing here (<strong>$500–$1,200</strong> for a standard interior room), 
-              realistic timelines, and what separates a pro from a weekend warrior.
+              I know typical pricing in Montgomery County, realistic timelines, 
+              and what separates a pro from a weekend warrior.
             </p>
             <p className="text-gray-700">
               That's why I'm committed to <strong>legitimacy and fair fixed rates</strong>. 
