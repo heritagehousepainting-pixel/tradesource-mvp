@@ -93,9 +93,14 @@ export default function Home() {
             <a href="#blog" className="hover:text-primary">Blog</a>
             <a href="#join" className="hover:text-primary">Join Network</a>
           </div>
-          <a href="#join" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-            Get Started
-          </a>
+          <div className="flex gap-2">
+            <a href="/login" className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-primary">
+              Sign In
+            </a>
+            <a href="#join" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+              Get Started
+            </a>
+          </div>
         </div>
       </nav>
 
