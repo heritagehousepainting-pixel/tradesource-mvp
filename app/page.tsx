@@ -102,6 +102,9 @@ export default function Home() {
             <a href="#join" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
               Get Started
             </a>
+            <a href="/homeowner" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
+              For Homeowners
+            </a>
           </div>
         </div>
       </nav>
