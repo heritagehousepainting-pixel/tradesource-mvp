@@ -393,14 +393,15 @@ export default function Home() {
                 
                 <div className="md:col-span-2 mt-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ☑ External Reviews (Optional)
-                    <span className="text-gray-500 font-normal"> - Last step before submitting</span>
+                    ☑ External Reviews *
+                    <span className="text-gray-500 font-normal"> - At least one link (Google, Yelp, etc.)</span>
                   </label>
                   <input
                     type="text"
+                    required
                     value={formData.externalReviews}
                     onChange={(e) => setFormData({ ...formData, externalReviews: e.target.value })}
-                    placeholder="Google, Yelp, or Houzz profile URL"
+                    placeholder="https://google.com/maps/..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
