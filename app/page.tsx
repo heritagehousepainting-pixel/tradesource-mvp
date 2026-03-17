@@ -353,7 +353,7 @@ export default function Home() {
                     <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>W-9</strong> (Tax ID)</span></div>
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Insurance</strong> ($1M+)</span></div>
-                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>License</strong></span></div>
+                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Contractors License</strong></span></div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG • Max 10MB each</p>
                   </div>
