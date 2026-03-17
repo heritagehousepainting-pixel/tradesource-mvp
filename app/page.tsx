@@ -349,23 +349,19 @@ export default function Home() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">W-9 Tax ID *</label>
                   <input
-                    type="text"
+                    type="file"
+                    accept=".pdf,.jpg,.png"
                     required
-                    value={formData.w9_tax_id}
-                    onChange={(e) => setFormData({ ...formData, w9_tax_id: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="XX-XXXXXXX"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Proof of Insurance *</label>
                   <input
-                    type="text"
+                    type="file"
+                    accept=".pdf,.jpg,.png"
                     required
-                    value={formData.insurance_info}
-                    onChange={(e) => setFormData({ ...formData, insurance_info: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="Insurance provider & policy #"
                   />
                 </div>
                 <div>
