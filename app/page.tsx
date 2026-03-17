@@ -34,7 +34,8 @@ export default function Home() {
     email: '',
     company: '',
     phone: '',
-    verificationDoc: null as File | null
+    verificationDoc: null as File | null,
+    externalReviews: ''
   })
   const [formStatus, setFormStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,6 +53,7 @@ export default function Home() {
           email: formData.email,
           company: formData.company,
           phone: formData.phone || null,
+          external_reviews: formData.externalReviews || null,
           status: 'pending',
         })
       
@@ -60,7 +62,7 @@ export default function Home() {
         setFormStatus('Something went wrong. Please try again.')
       } else {
         setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
-        setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null })
+        setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null, externalReviews: '' })
       }
     } catch (err) {
       console.error('Submission error:', err)
@@ -348,11 +350,10 @@ export default function Home() {
                 <div className="md:col-span-2">
                   <div className="bg-blue-50 rounded-xl p-4 mb-4">
                     <h3 className="font-bold text-gray-900 mb-3 text-sm">📋 What You Need to Apply</h3>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-700">
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>W-9</strong> (Tax ID)</span></div>
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Insurance</strong> ($1M+)</span></div>
                       <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>License</strong></span></div>
-                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Reviews</strong></span></div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG • Max 10MB each</p>
                   </div>
@@ -389,6 +390,21 @@ export default function Home() {
                     </label>
                   </div>
                 </div>
+                
+                <div className="md:col-span-2 mt-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ☑ External Reviews (Optional)
+                    <span className="text-gray-500 font-normal"> - Last step before submitting</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.externalReviews}
+                    onChange={(e) => setFormData({ ...formData, externalReviews: e.target.value })}
+                    placeholder="Google, Yelp, or Houzz profile URL"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                
                 <div className="md:col-span-2">
                   <button
                     type="submit"
