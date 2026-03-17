@@ -346,10 +346,18 @@ export default function Home() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Verification Documents *
-                    <span className="text-gray-500 font-normal">(License, insurance, etc.)</span>
-                  </label>
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4">
+                    <h3 className="font-bold text-gray-900 mb-3 text-sm">📋 What You Need to Apply</h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>W-9</strong> (Tax ID)</span></div>
+                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Insurance</strong> ($1M+)</span></div>
+                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>License</strong></span></div>
+                      <div className="flex items-center gap-1"><span className="text-green-600">☐</span> <span><strong>Reviews</strong></span></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">PDF, JPG, PNG • Max 10MB each</p>
+                  </div>
+                  
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload All Documents *</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
                     <input
                       type="file"
