@@ -34,7 +34,10 @@ export default function Home() {
     email: '',
     company: '',
     phone: '',
-    externalReviews: ''
+    w9_tax_id: '',
+    insurance_info: '',
+    license_number: '',
+    external_reviews: ''
   })
   const [formStatus, setFormStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,9 +47,6 @@ export default function Home() {
     setIsSubmitting(true)
     
     try {
-      console.log('Submitting application with:', { name: formData.name, email: formData.email, company: formData.company })
-      
-      // Save contractor application to Supabase
       const { data, error } = await supabase
         .from('contractor_applications')
         .insert({
@@ -54,24 +54,21 @@ export default function Home() {
           email: formData.email,
           company: formData.company,
           phone: formData.phone || null,
-          external_reviews: formData.externalReviews || null,
+          w9_tax_id: formData.w9_tax_id || null,
+          insurance_info: formData.insurance_info || null,
+          license_number: formData.license_number || null,
+          external_reviews: formData.external_reviews || null,
           status: 'pending',
         })
       
-      console.log('Supabase response:', { data, error })
-      
       if (error) {
         alert('Error: ' + error.message)
-        console.error('Supabase error:', error)
-        setFormStatus('Error: ' + error.message)
       } else {
-        alert('Success! Application submitted.')
-        setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
-        setFormData({ name: '', email: '', company: '', phone: '', externalReviews: '' })
+        alert('Success! Application submitted. We will verify your info and contact you within 48 hours.')
+        setFormData({ name: '', email: '', company: '', phone: '', w9_tax_id: '', insurance_info: '', license_number: '', external_reviews: '' })
       }
     } catch (err: any) {
-      console.error('Submission error:', err)
-      setFormStatus('Error: ' + (err?.message || 'Unknown error'))
+      alert('Error: ' + (err?.message || 'Unknown error'))
     } finally {
       setIsSubmitting(false)
     }
@@ -349,19 +346,48 @@ export default function Home() {
                     placeholder="(215) 555-0123"
                   />
                 </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    External Reviews Link *
-                    <span className="text-gray-500 font-normal"> (Google, Yelp, etc.)</span>
-                  </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">W-9 Tax ID *</label>
                   <input
                     type="text"
                     required
-                    value={formData.externalReviews}
-                    onChange={(e) => setFormData({ ...formData, externalReviews: e.target.value })}
-                    placeholder="https://google.com/maps/..."
+                    value={formData.w9_tax_id}
+                    onChange={(e) => setFormData({ ...formData, w9_tax_id: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="XX-XXXXXXX"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Proof of Insurance *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.insurance_info}
+                    onChange={(e) => setFormData({ ...formData, insurance_info: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Insurance provider & policy #"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business License Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.license_number}
+                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="License #"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">External Review Link *</label>
+                  <input
+                    type="url"
+                    required
+                    value={formData.external_reviews}
+                    onChange={(e) => setFormData({ ...formData, external_reviews: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="https://google.com/maps/..."
                   />
                 </div>
                 
