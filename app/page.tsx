@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 // Blog posts data
 const blogPosts = [
@@ -42,12 +43,31 @@ export default function Home() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Simulate submission
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
-    setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null })
-    setIsSubmitting(false)
+    try {
+      // Save contractor application to Supabase
+      const { error } = await supabase
+        .from('contractor_applications')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          phone: formData.phone || null,
+          status: 'pending',
+        })
+      
+      if (error) {
+        console.error('Supabase error:', error)
+        setFormStatus('Something went wrong. Please try again.')
+      } else {
+        setFormStatus('Thanks for applying! We\'ll verify your business and contact you within 48 hours.')
+        setFormData({ name: '', email: '', company: '', phone: '', verificationDoc: null })
+      }
+    } catch (err) {
+      console.error('Submission error:', err)
+      setFormStatus('An error occurred. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
