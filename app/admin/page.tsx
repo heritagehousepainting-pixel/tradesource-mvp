@@ -152,7 +152,21 @@ export default function AdminPage() {
         localStorage.setItem('contractor_applications', JSON.stringify(updated))
       }
       
-      // Also save approved contractors
+      // Generate password setup token
+      const token = Math.random().toString(36).slice(2) + Date.now().toString(36)
+      const passwordSetupLink = `https://tradesource-mvp.vercel.app/set-password?token=${token}`
+      
+      // Store pending password setup
+      const pendingUsers = JSON.parse(localStorage.getItem('pending_password_set') || '{}')
+      pendingUsers[token] = {
+        email: app.email,
+        name: app.name,
+        company: app.company,
+        created_at: new Date().toISOString()
+      }
+      localStorage.setItem('pending_password_set', JSON.stringify(pendingUsers))
+      
+      // Also save approved contractors (without password)
       const contractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
       contractors.push({
         id: app.id,
@@ -163,11 +177,12 @@ export default function AdminPage() {
         license_number: app.license_number,
         external_reviews: app.external_reviews,
         status: 'approved',
+        password_set: false,
         created_at: new Date().toISOString()
       })
       localStorage.setItem('approved_contractors', JSON.stringify(contractors))
       
-      alert('Success! Contractor approved. They can now login.')
+      alert(`Success! Contractor approved.\n\n📧 Send them this link to set their password:\n${passwordSetupLink}`)
       setSelectedApp(null)
     }
   }
