@@ -9,6 +9,8 @@ interface Application {
   email: string
   company: string
   phone: string | null
+  license_number: string | null
+  external_reviews: string | null
   status: string
   verified_w9: boolean
   verified_insurance: boolean
@@ -33,6 +35,8 @@ export default function AdminPage() {
     if (stored === 'authenticated') {
       setIsAuthenticated(true)
       fetchApplications()
+    } else {
+      setLoading(false)
     }
   }, [])
 
@@ -124,7 +128,8 @@ export default function AdminPage() {
     switch (status) {
       case 'approved': return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Approved</span>
       case 'rejected': return <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">Rejected</span>
-      default: return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pending</span>
+      case 'pending_review': return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pending</span>
+      default: return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">{status || 'Pending'}</span>
     }
   }
 
@@ -144,7 +149,7 @@ export default function AdminPage() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -155,14 +160,14 @@ export default function AdminPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" className="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-blue-700">Sign In</button>
+            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700">Sign In</button>
           </form>
         </div>
       </main>
@@ -174,7 +179,7 @@ export default function AdminPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">TS</span>
             </div>
             <span className="font-bold text-xl text-gray-900">TradeSource Admin</span>
@@ -186,7 +191,7 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Contractor Applications</h1>
-          <button onClick={fetchApplications} className="text-sm text-primary hover:underline">Refresh</button>
+          <button onClick={fetchApplications} className="text-sm text-blue-600 hover:underline">Refresh</button>
         </div>
 
         {loading ? (
@@ -203,10 +208,10 @@ export default function AdminPage() {
                   <tr>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">License</th>
                     <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">W-9</th>
                     <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ins.</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Lic.</th>
-                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ext.</th>
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase"></th>
                   </tr>
@@ -220,6 +225,8 @@ export default function AdminPage() {
                     >
                       <td className="px-3 py-3 font-medium text-gray-900 text-sm">{app.name}</td>
                       <td className="px-3 py-3 text-gray-600 text-sm">{app.company}</td>
+                      <td className="px-3 py-3 text-gray-500 text-sm">{app.email}</td>
+                      <td className="px-3 py-3 text-gray-500 text-sm font-mono text-xs">{app.license_number?.slice(0, 12) || '-'}</td>
                       <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => updateVerification(app.id, 'verified_w9', !app.verified_w9)}>
                           <CheckIcon checked={app.verified_w9} />
@@ -230,21 +237,9 @@ export default function AdminPage() {
                           <CheckIcon checked={app.verified_insurance} />
                         </button>
                       </td>
-                      <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => updateVerification(app.id, 'verified_license', !app.verified_license)}>
-                          <CheckIcon checked={app.verified_license} />
-                        </button>
-                      </td>
-                      <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => updateVerification(app.id, 'verified_external', !app.verified_external)}>
-                          <CheckIcon checked={app.verified_external} />
-                        </button>
-                      </td>
                       <td className="px-3 py-3">{getStatusBadge(app.status)}</td>
                       <td className="px-3 py-3 text-right">
-                        {app.status === 'pending' && (
-                          <span className="text-xs text-gray-400">Click to review →</span>
-                        )}
+                        <span className="text-xs text-gray-400">Click →</span>
                       </td>
                     </tr>
                   ))}
@@ -258,13 +253,11 @@ export default function AdminPage() {
       {/* Detail Modal */}
       {selectedApp && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">{selectedApp.name}</h2>
                 <p className="text-gray-600">{selectedApp.company}</p>
-                <p className="text-gray-500 text-sm">{selectedApp.email}</p>
-                {selectedApp.phone && <p className="text-gray-500 text-sm">{selectedApp.phone}</p>}
               </div>
               <button onClick={() => setSelectedApp(null)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -273,6 +266,35 @@ export default function AdminPage() {
               </button>
             </div>
 
+            {/* Contact Info */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
+              <div className="space-y-2 text-sm">
+                <p><span className="text-gray-500">Email:</span> <span className="text-gray-900">{selectedApp.email}</span></p>
+                <p><span className="text-gray-500">Phone:</span> <span className="text-gray-900">{selectedApp.phone || 'Not provided'}</span></p>
+                <p><span className="text-gray-500">Company:</span> <span className="text-gray-900">{selectedApp.company}</span></p>
+              </div>
+            </div>
+
+            {/* Business Info */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Business Information</h3>
+              <div className="space-y-2 text-sm">
+                <p><span className="text-gray-500">License #:</span> <span className="text-gray-900 font-mono">{selectedApp.license_number || 'Not provided'}</span></p>
+                <p><span className="text-gray-500">External Reviews:</span> 
+                  {selectedApp.external_reviews ? (
+                    <a href={selectedApp.external_reviews} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                      View →
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 ml-1">Not provided</span>
+                  )}
+                </p>
+                <p><span className="text-gray-500">Submitted:</span> <span className="text-gray-900">{selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString() : 'Unknown'}</span></p>
+              </div>
+            </div>
+
+            {/* Verification Checklist */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h3 className="font-semibold text-gray-900 mb-3">Verification Checklist</h3>
               <div className="space-y-3">
@@ -296,7 +318,7 @@ export default function AdminPage() {
                   >
                     {selectedApp.verified_insurance && <span className="text-white text-sm">✓</span>}
                   </button>
-                  <span className="text-sm text-gray-700">Proof of Insurance ($1M+ liability)</span>
+                  <span className="text-sm text-gray-700">Proof of Insurance</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <button 
@@ -318,11 +340,12 @@ export default function AdminPage() {
                   >
                     {selectedApp.verified_external && <span className="text-white text-sm">✓</span>}
                   </button>
-                  <span className="text-sm text-gray-700">External Reviews (Google, Yelp, etc.)</span>
+                  <span className="text-sm text-gray-700">External Reviews</span>
                 </label>
               </div>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex gap-3">
               <button
                 onClick={() => rejectApplication(selectedApp.id)}
@@ -332,8 +355,7 @@ export default function AdminPage() {
               </button>
               <button
                 onClick={() => approveApplication(selectedApp)}
-                disabled={selectedApp.status !== 'pending'}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700"
               >
                 Approve & Create Account
               </button>
