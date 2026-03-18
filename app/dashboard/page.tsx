@@ -58,6 +58,27 @@ export default function DashboardPage() {
   }, [user])
 
   const checkUser = async () => {
+    // Check sessionStorage for fake login (MVP)
+    const fakeUser = sessionStorage.getItem('tradesource_user')
+    if (fakeUser) {
+      const userData = JSON.parse(fakeUser)
+      setUser({ email: userData.email })
+      
+      // Check if approved
+      const approved = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
+      const contractor = approved.find((c: any) => c.email === userData.email)
+      
+      if (contractor) {
+        setVerificationStatus('approved')
+        setContractor(contractor)
+      } else {
+        setVerificationStatus('unknown')
+      }
+      
+      setLoading(false)
+      return
+    }
+    
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
@@ -180,6 +201,7 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
+    sessionStorage.removeItem('tradesource_user')
     await supabase.auth.signOut()
     router.push('/')
   }

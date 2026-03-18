@@ -17,13 +17,29 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      // First check localStorage for approved contractors (MVP fallback)
+      const approvedContractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
+      const contractor = approvedContractors.find((c: any) => c.email === email && c.password_set)
+      
+      if (contractor) {
+        // Store fake auth session in localStorage
+        sessionStorage.setItem('tradesource_user', JSON.stringify({
+          email: contractor.email,
+          name: contractor.name,
+          company: contractor.company
+        }))
+        router.push('/dashboard')
+        return
+      }
+
+      // Try Supabase auth
       const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (supabaseError) {
-        setError(supabaseError.message)
+        setError('Invalid email or password')
       } else if (data.user) {
         // Redirect to contractor dashboard
         router.push('/dashboard')
