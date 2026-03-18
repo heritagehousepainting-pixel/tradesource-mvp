@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import PriceEstimator from '@/components/PriceEstimator'
 
 interface Job {
   id: string
@@ -184,7 +185,10 @@ export default function HomeownerDashboardPage() {
 
         {/* Post Job Tab */}
         {activeTab === 'post' && (
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="space-y-6">
+            <PriceEstimator />
+            
+            <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="font-bold text-lg text-gray-900 mb-6">Post a New Painting Job</h2>
             <form onSubmit={handlePostJob} className="space-y-4">
               <div>
@@ -279,6 +283,7 @@ export default function HomeownerDashboardPage() {
                 {submitting ? 'Posting...' : 'Post Job'}
               </button>
             </form>
+          </div>
           </div>
         )}
       </div>
