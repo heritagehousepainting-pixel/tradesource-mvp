@@ -55,8 +55,14 @@ export default function AdminPage() {
       .select('*')
       .order('created_at', { ascending: false })
     
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       setApplications(data)
+    } else {
+      // Fallback: read from localStorage
+      const stored = localStorage.getItem('contractor_applications')
+      if (stored) {
+        setApplications(JSON.parse(stored))
+      }
     }
     setLoading(false)
   }

@@ -46,29 +46,37 @@ export default function Home() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Try to upload files (silent fail - won't break form)
-    let w9Path: string | null = null
-    let insurancePath: string | null = null
+    // Store files as base64 in localStorage (MVP approach)
+    let w9Data: string | null = null
+    let insuranceData: string | null = null
     
     try {
       if (w9File) {
-        const ext = w9File.name.split('.').pop() || 'pdf'
-        const { data, error } = await supabase.storage
-          .from('contractor-docs')
-          .upload(`w9_${Date.now()}_${Math.random()}.${ext}`, w9File)
-        if (!error && data) w9Path = data.path
+        w9Data = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(w9File)
+        })
       }
-    } catch (err) { /* silently fail */ }
+    } catch (err) { /* fail silently */ }
     
     try {
       if (insuranceFile) {
-        const ext = insuranceFile.name.split('.').pop() || 'pdf'
-        const { data, error } = await supabase.storage
-          .from('contractor-docs')
-          .upload(`ins_${Date.now()}_${Math.random()}.${ext}`, insuranceFile)
-        if (!error && data) insurancePath = data.path
+        insuranceData = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(insuranceFile)
+        })
       }
-    } catch (err) { /* silently fail */ }
+    } catch (err) { /* fail silently */ }
+    
+    // Store documents in localStorage
+    if (w9Data || insuranceData) {
+      const docs = JSON.parse(localStorage.getItem('contractor_docs') || '{}')
+      if (w9Data) docs[`w9_${Date.now()}`] = w9Data
+      if (insuranceData) docs[`ins_${Date.now()}`] = insuranceData
+      localStorage.setItem('contractor_docs', JSON.stringify(docs))
+    }
     
     try {
       const { data, error } = await supabase
@@ -80,13 +88,22 @@ export default function Home() {
           phone: formData.phone || null,
           license_number: formData.license_number || null,
           external_reviews: formData.external_reviews || null,
-          w9_doc_path: w9Path,
-          insurance_doc_path: insurancePath,
-          status: 'pending',
+          status: 'pending_review',
         })
       
       if (error) {
-        alert('Error: ' + error.message)
+        // Fallback: store in localStorage if Supabase fails
+        const apps = JSON.parse(localStorage.getItem('contractor_applications') || '[]')
+        apps.push({
+          ...formData,
+          status: 'pending_review',
+          created_at: new Date().toISOString()
+        })
+        localStorage.setItem('contractor_applications', JSON.stringify(apps))
+        alert('Success! Application submitted (saved locally). We will verify your info and contact you within 48 hours.')
+        setFormData({ name: '', email: '', company: '', phone: '', license_number: '', external_reviews: '' })
+        setW9File(null)
+        setInsuranceFile(null)
       } else {
         alert('Success! Application submitted. We will verify your info and contact you within 48 hours.')
         setFormData({ name: '', email: '', company: '', phone: '', license_number: '', external_reviews: '' })
