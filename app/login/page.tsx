@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       // First check localStorage for approved contractors (MVP fallback)
       const approvedContractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
-      const contractor = approvedContractors.find((c: any) => c.email === email && c.password_set)
+      const contractor = approvedContractors.find((c: any) => c.email === email)
       
       if (contractor) {
         // Store fake auth session in localStorage
