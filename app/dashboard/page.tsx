@@ -91,8 +91,15 @@ export default function DashboardPage() {
         }
       }
     } catch (e) {
-      const stored = localStorage.getItem('contractor_status')
-      if (stored) status = stored
+      // Check localStorage for approved contractors
+      const approved = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
+      const found = approved.find((c: any) => c.email === user.email)
+      if (found) {
+        status = 'approved'
+      } else {
+        const stored = localStorage.getItem('contractor_status')
+        if (stored) status = stored
+      }
     }
     
     setVerificationStatus(status || 'unknown')
