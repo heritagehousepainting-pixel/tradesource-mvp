@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'jobs' | 'post' | 'profile'>('jobs')
   const [jobs, setJobs] = useState<Job[]>([])
   const [contractor, setContractor] = useState<Contractor | null>(null)
+  const [verificationStatus, setVerificationStatus] = useState<string>('unknown')
   
   // Form state
   const [jobForm, setJobForm] = useState({
@@ -60,10 +61,42 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
-    } else {
-      setUser(user)
-      setLoading(false)
+      return
     }
+    
+    setUser(user)
+    
+    // Check contractor verification status
+    let status = null
+    try {
+      const { data } = await supabase
+        .from('contractors')
+        .select('status')
+        .eq('email', user.email)
+        .single()
+      
+      if (data?.status) {
+        status = data.status
+      } else {
+        const { data: app } = await supabase
+          .from('contractor_applications')
+          .select('status')
+          .eq('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        
+        if (app?.status) {
+          status = app.status
+        }
+      }
+    } catch (e) {
+      const stored = localStorage.getItem('contractor_status')
+      if (stored) status = stored
+    }
+    
+    setVerificationStatus(status || 'unknown')
+    setLoading(false)
   }
 
   const loadJobs = async () => {
@@ -148,6 +181,52 @@ export default function DashboardPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-500">Loading...</p>
+      </main>
+    )
+  }
+
+  // Show pending verification screen if not approved
+  if (verificationStatus !== 'approved') {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">TS</span>
+              </div>
+              <span className="font-bold text-xl text-gray-900">TradeSource</span>
+            </div>
+            <button onClick={handleSignOut} className="text-sm text-gray-600 hover:text-gray-900">
+              Sign Out
+            </button>
+          </div>
+        </header>
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8">
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verification Pending</h1>
+            <p className="text-gray-600 mb-4">
+              Your contractor application is currently under review.
+            </p>
+            <p className="text-sm text-gray-500">
+              Status: <span className="font-medium text-yellow-700">{verificationStatus || 'pending_review'}</span>
+            </p>
+            <p className="text-sm text-gray-500 mt-4">
+              We typically verify applications within 48 hours. You'll receive an email once approved.
+            </p>
+            <button 
+              onClick={() => router.push('/')}
+              className="mt-6 px-6 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
       </main>
     )
   }
