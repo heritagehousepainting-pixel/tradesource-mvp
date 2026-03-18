@@ -19,6 +19,13 @@ interface Application {
   created_at: string
 }
 
+interface UploadedDocs {
+  w9: string | null
+  insurance: string | null
+  w9Name: string
+  insuranceName: string
+}
+
 const ADMIN_EMAIL = 'heritagehousepainting@gmail.com'
 
 export default function AdminPage() {
@@ -28,6 +35,7 @@ export default function AdminPage() {
   const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedDocs, setSelectedDocs] = useState<UploadedDocs | null>(null)
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
 
   useEffect(() => {
@@ -39,6 +47,16 @@ export default function AdminPage() {
       setLoading(false)
     }
   }, [])
+
+  // Load documents when app is selected
+  useEffect(() => {
+    if (selectedApp?.id) {
+      const docs = JSON.parse(localStorage.getItem('contractor_docs') || '{}')
+      setSelectedDocs(docs[selectedApp.id] || null)
+    } else {
+      setSelectedDocs(null)
+    }
+  }, [selectedApp])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -292,6 +310,52 @@ export default function AdminPage() {
                 </p>
                 <p><span className="text-gray-500">Submitted:</span> <span className="text-gray-900">{selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleDateString() : 'Unknown'}</span></p>
               </div>
+            </div>
+
+            {/* Uploaded Documents */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-gray-900 mb-3">Uploaded Documents</h3>
+              {selectedDocs ? (
+                <div className="space-y-3">
+                  {selectedDocs.w9 && (
+                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">W-9</p>
+                        <p className="text-xs text-gray-500">{selectedDocs.w9Name}</p>
+                      </div>
+                      <a 
+                        href={selectedDocs.w9} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View →
+                      </a>
+                    </div>
+                  )}
+                  {selectedDocs.insurance && (
+                    <div className="flex items-center justify-between bg-white p-3 rounded-lg border">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Insurance</p>
+                        <p className="text-xs text-gray-500">{selectedDocs.insuranceName}</p>
+                      </div>
+                      <a 
+                        href={selectedDocs.insurance} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        View →
+                      </a>
+                    </div>
+                  )}
+                  {!selectedDocs.w9 && !selectedDocs.insurance && (
+                    <p className="text-sm text-gray-500">No documents uploaded</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Loading documents...</p>
+              )}
             </div>
 
             {/* Verification Checklist */}

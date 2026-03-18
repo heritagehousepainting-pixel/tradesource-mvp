@@ -70,11 +70,19 @@ export default function Home() {
       }
     } catch (err) { /* fail silently */ }
     
-    // Store documents in localStorage
+    // Generate application ID for linking documents
+    const appId = 'app_' + Date.now()
+    
+    // Store documents in localStorage with app ID
     if (w9Data || insuranceData) {
       const docs = JSON.parse(localStorage.getItem('contractor_docs') || '{}')
-      if (w9Data) docs[`w9_${Date.now()}`] = w9Data
-      if (insuranceData) docs[`ins_${Date.now()}`] = insuranceData
+      docs[appId] = {
+        w9: w9Data,
+        insurance: insuranceData,
+        w9Name: w9File?.name || 'W-9.pdf',
+        insuranceName: insuranceFile?.name || 'Insurance.pdf',
+        created_at: new Date().toISOString()
+      }
       localStorage.setItem('contractor_docs', JSON.stringify(docs))
     }
     
@@ -82,6 +90,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('contractor_applications')
         .insert({
+          id: appId,
           name: formData.name,
           email: formData.email,
           company: formData.company,
@@ -95,6 +104,7 @@ export default function Home() {
         // Fallback: store in localStorage if Supabase fails
         const apps = JSON.parse(localStorage.getItem('contractor_applications') || '[]')
         apps.push({
+          id: appId,
           ...formData,
           status: 'pending_review',
           created_at: new Date().toISOString()
