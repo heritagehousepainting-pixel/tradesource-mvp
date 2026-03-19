@@ -27,12 +27,51 @@ function HomeownerPageContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+    
+    if (isSignUp) {
+      if (!formData.name.trim()) {
+        errors.name = 'Full name is required'
+      }
+      if (!formData.email.trim()) {
+        errors.email = 'Email is required'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = 'Please enter a valid email'
+      }
+      if (!formData.password.trim()) {
+        errors.password = 'Password is required'
+      } else if (formData.password.length < 6) {
+        errors.password = 'Password must be at least 6 characters'
+      }
+    } else {
+      if (!formData.email.trim()) {
+        errors.email = 'Email is required'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = 'Please enter a valid email'
+      }
+      if (!formData.password.trim()) {
+        errors.password = 'Password is required'
+      }
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setSuccess('')
+
+    // Validate form before submitting
+    if (!validateForm()) {
+      setLoading(false)
+      return
+    }
 
     try {
       // Check if Supabase is configured
@@ -197,23 +236,24 @@ function HomeownerPageContent() {
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors(prev => ({ ...prev, name: '' })); }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="John Smith"
-                      required={isSignUp}
                     />
+                    {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
                   </div>
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
+                    autoComplete="username"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors(prev => ({ ...prev, email: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="you@example.com"
-                    required
                   />
+                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
                 </div>
                 {isSignUp && (
                   <div>
@@ -233,11 +273,11 @@ function HomeownerPageContent() {
                     type="password"
                     autoComplete="current-password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setFormErrors(prev => ({ ...prev, password: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.password ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="••••••••"
-                    required
                   />
+                  {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
                 </div>
                 
                 {error && <p className="text-red-500 text-sm">{error}</p>}

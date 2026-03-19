@@ -10,10 +10,33 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [formErrors, setFormErrors] = useState<{email?: string; password?: string}>({})
+
+  const validateForm = (): boolean => {
+    const errors: {email?: string; password?: string} = {}
+    
+    if (!email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Please enter a valid email'
+    }
+    if (!password.trim()) {
+      errors.password = 'Password is required'
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    // Validate form before submitting
+    if (!validateForm()) {
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -122,12 +145,13 @@ export default function LoginPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
+                  autoComplete="username"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => { setEmail(e.target.value); setFormErrors(prev => ({ ...prev, email: '' })); }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="you@company.com"
-                  required
                 />
+                {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
@@ -135,11 +159,11 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => { setPassword(e.target.value); setFormErrors(prev => ({ ...prev, password: '' })); }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.password ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="••••••••"
-                  required
                 />
+                {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
               </div>
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
