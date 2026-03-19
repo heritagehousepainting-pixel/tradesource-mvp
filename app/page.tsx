@@ -418,6 +418,7 @@ export default function Home() {
                   <input
                     type="email"
                     required
+                    autocomplete="username"
                     value={formData.email}
                     onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors(prev => ({ ...prev, email: '' })); }}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
