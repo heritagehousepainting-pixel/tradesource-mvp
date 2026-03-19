@@ -83,12 +83,20 @@ export default function PriceDisplay({ budgetMin, budgetMax, contractorEmail, sh
     return <span className="text-gray-400">Loading...</span>
   }
 
+  // Validate budget values
+  const validMin = typeof budgetMin === 'number' && !isNaN(budgetMin) && budgetMin > 0
+  const validMax = typeof budgetMax === 'number' && !isNaN(budgetMax) && budgetMax > 0
+  
+  // Default fallback prices if invalid
+  const safeMin = validMin ? budgetMin : 1000
+  const safeMax = validMax ? budgetMax : 5000
+
   // Show blurred price for non-vetted contractors
   if (!isVetted) {
     return (
       <span className="relative inline-block">
         <span className="blur-sm select-none text-gray-500">
-          ${(budgetMin / 1000).toFixed(1)}k - ${(budgetMax / 1000).toFixed(1)}k
+          ${(safeMin / 1000).toFixed(1)}k - ${(safeMax / 1000).toFixed(1)}k
         </span>
         <span className="absolute inset-0 flex items-center justify-center">
           <span className="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded">
@@ -102,7 +110,7 @@ export default function PriceDisplay({ budgetMin, budgetMax, contractorEmail, sh
   // Show full price for vetted contractors
   return (
     <span className="text-gray-700">
-      ${budgetMin.toLocaleString()} - ${budgetMax.toLocaleString()}
+      ${validMin ? budgetMin.toLocaleString() : 'N/A'} - ${validMax ? budgetMax.toLocaleString() : 'N/A'}
     </span>
   )
 }

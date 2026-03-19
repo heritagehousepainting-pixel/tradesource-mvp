@@ -50,17 +50,49 @@ export default function ContractorProfilePage() {
         profiles = [...profiles, ...approved]
       }
       
-      if (profiles.length > 0) {
-        const found = profiles.find((p: Contractor) => p.id === contractorId)
-        // Accept contractor if: status is 'approved', OR status is undefined/missing (test data)
-        if (found && (found.status === 'approved' || !found.status)) {
-          console.log('Contractor found:', found.company || found.name)
-          setContractor(found)
-          setLoading(false)
-          return
-        } else if (found) {
-          console.log('Contractor found but status is:', found.status)
-        }
+      // If still no profiles, use fallback mock data for demo purposes
+      if (profiles.length === 0) {
+        profiles = [
+          {
+            id: '1',
+            name: 'Michael Johnson',
+            email: 'mike@heritagehousepainting.com',
+            company: 'Heritage House Painting',
+            phone: '(215) 555-0123',
+            license_number: 'PA123456',
+            external_reviews: 'https://goo.gl/maps/heritage',
+            status: 'approved',
+            created_at: '2026-01-15T10:00:00Z'
+          },
+          {
+            id: '2',
+            name: 'David Williams',
+            email: 'david@premierpainting.com',
+            company: 'Premier Painting Co',
+            phone: '(215) 555-0456',
+            license_number: 'PA789012',
+            external_reviews: 'https://goo.gl/maps/premier',
+            status: 'approved',
+            created_at: '2026-02-01T10:00:00Z'
+          }
+        ]
+      }
+      
+      // Try to find contractor by ID (handles both string and numeric IDs)
+      const found = profiles.find((p: Contractor) => 
+        p.id === contractorId || 
+        p.id === String(contractorId) || 
+        String(p.id) === contractorId
+      )
+      
+      // Accept contractor if: status is 'approved', OR status is undefined/missing (test data)
+      if (found && (found.status === 'approved' || !found.status)) {
+        console.log('Contractor found:', found.company || found.name)
+        setContractor(found)
+        setLoading(false)
+        return
+      } else if (found) {
+        console.log('Contractor found but status is:', found.status)
       }
       
       // If we get here, contractor wasn't found in localStorage

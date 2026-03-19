@@ -144,7 +144,10 @@ export default function JobsFeedPage() {
                   </div>
                 </div>
                 
-                <p className="text-xs text-gray-400 mt-4">Posted {new Date(job.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400 mt-4">Posted {job.created_at ? (() => {
+                  const date = new Date(job.created_at);
+                  return isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString();
+                })() : 'Recently'}</p>
               </div>
             ))}
           </div>

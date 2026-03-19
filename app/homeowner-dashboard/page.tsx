@@ -48,12 +48,18 @@ export default function HomeownerDashboardPage() {
   }, [user])
 
   const checkUser = async () => {
-    // Check sessionStorage for mock login (MVP fallback)
+    // Check sessionStorage for mock login (MVP fallback) - this should be checked FIRST
+    // to ensure authenticated homeowners can access their dashboard
     const fakeUser = sessionStorage.getItem('tradesource_homeowner')
     if (fakeUser) {
-      setUser(JSON.parse(fakeUser))
-      setLoading(false)
-      return
+      try {
+        setUser(JSON.parse(fakeUser))
+        setLoading(false)
+        return
+      } catch (e) {
+        // Invalid JSON in sessionStorage, clear it
+        sessionStorage.removeItem('tradesource_homeowner')
+      }
     }
     
     // Try Supabase auth if configured
@@ -69,6 +75,9 @@ export default function HomeownerDashboardPage() {
       } catch (e) { /* continue to login */ }
     }
     
+    // Not authenticated - redirect to homeowner sign-in page
+    // Note: This is correct behavior - unauthenticated users should sign in first
+    // Authenticated users should see the dashboard (handled above)
     router.push('/homeowner')
   }
 

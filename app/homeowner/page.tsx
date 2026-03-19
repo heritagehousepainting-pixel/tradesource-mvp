@@ -231,6 +231,7 @@ function HomeownerPageContent() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                   <input
                     type="password"
+                    autoComplete="current-password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"

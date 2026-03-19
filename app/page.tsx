@@ -37,13 +37,58 @@ export default function Home() {
     license_number: '',
     external_reviews: ''
   })
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [w9File, setW9File] = useState<File | null>(null)
   const [insuranceFile, setInsuranceFile] = useState<File | null>(null)
   const [formStatus, setFormStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Full name is required'
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email'
+    }
+    if (!formData.company.trim()) {
+      errors.company = 'Company name is required'
+    }
+    if (!formData.license_number.trim()) {
+      errors.license_number = 'License number is required'
+    }
+    if (!formData.external_reviews.trim()) {
+      errors.external_reviews = 'Review link is required'
+    } else if (!formData.external_reviews.startsWith('http')) {
+      errors.external_reviews = 'Please enter a valid URL starting with http:// or https://'
+    }
+    if (!w9File) {
+      errors.w9File = 'W-9 document is required'
+    }
+    if (!insuranceFile) {
+      errors.insuranceFile = 'Insurance document is required'
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate form before submitting
+    if (!validateForm()) {
+      // Scroll to first error
+      const firstError = document.querySelector('.form-error')
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+    
     setIsSubmitting(true)
     
     // Store files as base64 in localStorage (MVP approach)
@@ -362,10 +407,11 @@ export default function Home() {
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors(prev => ({ ...prev, name: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="John Smith"
                   />
+                  {formErrors.name && <p className="text-red-500 text-sm mt-1 form-error">{formErrors.name}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
@@ -373,10 +419,11 @@ export default function Home() {
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors(prev => ({ ...prev, email: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="john@company.com"
                   />
+                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
@@ -384,10 +431,11 @@ export default function Home() {
                     type="text"
                     required
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setFormData({ ...formData, company: e.target.value }); setFormErrors(prev => ({ ...prev, company: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.company ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Smith Painting LLC"
                   />
+                  {formErrors.company && <p className="text-red-500 text-sm mt-1">{formErrors.company}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
@@ -405,9 +453,10 @@ export default function Home() {
                     type="file"
                     accept=".pdf,.jpg,.png"
                     required
-                    onChange={(e) => setW9File(e.target.files?.[0] || null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setW9File(e.target.files?.[0] || null); setFormErrors(prev => ({ ...prev, w9File: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.w9File ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {formErrors.w9File && <p className="text-red-500 text-sm mt-1">{formErrors.w9File}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Upload Insurance *</label>
@@ -415,9 +464,10 @@ export default function Home() {
                     type="file"
                     accept=".pdf,.jpg,.png"
                     required
-                    onChange={(e) => setInsuranceFile(e.target.files?.[0] || null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setInsuranceFile(e.target.files?.[0] || null); setFormErrors(prev => ({ ...prev, insuranceFile: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.insuranceFile ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {formErrors.insuranceFile && <p className="text-red-500 text-sm mt-1">{formErrors.insuranceFile}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Business License Number *</label>
@@ -425,10 +475,11 @@ export default function Home() {
                     type="text"
                     required
                     value={formData.license_number}
-                    onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setFormData({ ...formData, license_number: e.target.value }); setFormErrors(prev => ({ ...prev, license_number: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.license_number ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="License #"
                   />
+                  {formErrors.license_number && <p className="text-red-500 text-sm mt-1">{formErrors.license_number}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">External Review Link *</label>
@@ -436,10 +487,11 @@ export default function Home() {
                     type="url"
                     required
                     value={formData.external_reviews}
-                    onChange={(e) => setFormData({ ...formData, external_reviews: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => { setFormData({ ...formData, external_reviews: e.target.value }); setFormErrors(prev => ({ ...prev, external_reviews: '' })); }}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.external_reviews ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="https://google.com/maps/..."
                   />
+                  {formErrors.external_reviews && <p className="text-red-500 text-sm mt-1">{formErrors.external_reviews}</p>}
                 </div>
                 
                 <div className="md:col-span-2">
