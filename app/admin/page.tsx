@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
+import { downloadExport, importFromJSON, clearAllData, ExportData } from '@/lib/dataUtils'
 
 interface Application {
   id: string
@@ -37,6 +38,9 @@ export default function AdminPage() {
   const [error, setError] = useState('')
   const [selectedDocs, setSelectedDocs] = useState<UploadedDocs | null>(null)
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ type: string; data?: any } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const stored = sessionStorage.getItem('tradesource_admin')
@@ -238,6 +242,100 @@ export default function AdminPage() {
     setIsAuthenticated(false)
   }
 
+  // Custom confirmation modal
+  const ConfirmModal = () => {
+    if (!showConfirmModal || !confirmAction) return null
+    
+    const messages: Record<string, { title: string; message: string; confirmLabel: string; danger?: boolean }> = {
+      clearData: {
+        title: 'Clear All Data?',
+        message: 'This will permanently delete all local data including applications, contractors, and jobs. This cannot be undone.',
+        confirmLabel: 'Clear All Data',
+        danger: true
+      },
+      deleteApplication: {
+        title: 'Delete Application?',
+        message: 'This will permanently remove this application. This cannot be undone.',
+        confirmLabel: 'Delete',
+        danger: true
+      }
+    }
+    
+    const config = messages[confirmAction.type] || { title: 'Confirm', message: 'Are you sure?', confirmLabel: 'Confirm' }
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[100]">
+        <div className="bg-white rounded-xl max-w-sm w-full p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{config.title}</h3>
+          <p className="text-gray-600 text-sm mb-6">{config.message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowConfirmModal(false); setConfirmAction(null); }}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (confirmAction.type === 'clearData') {
+                  clearAllData()
+                  setApplications([])
+                } else if (confirmAction.type === 'deleteApplication' && confirmAction.data) {
+                  deleteApplication(confirmAction.data)
+                }
+                setShowConfirmModal(false)
+                setConfirmAction(null)
+              }}
+              className={`flex-1 px-4 py-2 rounded-lg text-white font-medium ${
+                config.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {config.confirmLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const handleExport = () => {
+    downloadExport()
+    alert('Data exported successfully!')
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = importFromJSON(event.target?.result as string)
+      if (result.success) {
+        alert(result.message)
+        fetchApplications()
+      } else {
+        alert('Import failed: ' + result.message)
+      }
+    }
+    reader.readAsText(file)
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const deleteApplication = (id: string) => {
+    setApplications(applications.filter(a => a.id !== id))
+    const stored = localStorage.getItem('contractor_applications')
+    if (stored) {
+      const apps = JSON.parse(stored)
+      const updated = apps.filter((a: Application) => a.id !== id)
+      localStorage.setItem('contractor_applications', JSON.stringify(updated))
+    }
+    setSelectedApp(null)
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved': return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Approved</span>
@@ -305,7 +403,37 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Contractor Applications</h1>
-          <button onClick={fetchApplications} className="text-sm text-blue-600 hover:underline">Refresh</button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleExport}
+              className="text-sm text-blue-600 hover:underline px-3 py-1"
+              title="Export all data to JSON file"
+            >
+              📥 Export Data
+            </button>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="text-sm text-blue-600 hover:underline px-3 py-1"
+              title="Import data from JSON file"
+            >
+              📤 Import Data
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <button 
+              onClick={() => { setConfirmAction({ type: 'clearData' }); setShowConfirmModal(true); }}
+              className="text-sm text-red-600 hover:underline px-3 py-1"
+              title="Clear all local data"
+            >
+              🗑️ Clear Data
+            </button>
+            <button onClick={fetchApplications} className="text-sm text-blue-600 hover:underline px-3 py-1">Refresh</button>
+          </div>
         </div>
 
         {loading ? (
@@ -523,6 +651,9 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Custom Confirmation Modal */}
+      <ConfirmModal />
     </main>
   )
 }

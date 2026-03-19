@@ -14,6 +14,7 @@ interface Job {
   budget_max: number
   status: 'open' | 'in_progress' | 'completed' | 'cancelled'
   created_at: string
+  updated_at?: string
 }
 
 interface Contractor {
@@ -45,6 +46,7 @@ export default function DashboardPage() {
     budget_max: ''
   })
   const [submitting, setSubmitting] = useState(false)
+  const [editingJob, setEditingJob] = useState<Job | null>(null)
 
   useEffect(() => {
     checkUser()
@@ -212,6 +214,67 @@ export default function DashboardPage() {
     alert('Job posted successfully!')
   }
 
+  const handleEditJob = (job: Job) => {
+    setEditingJob(job)
+    setJobForm({
+      title: job.title,
+      description: job.description,
+      property_type: job.property_type,
+      area: job.area,
+      budget_min: job.budget_min.toString(),
+      budget_max: job.budget_max.toString()
+    })
+    setActiveTab('post')
+  }
+
+  const handleUpdateJob = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingJob) return
+    
+    setSubmitting(true)
+    
+    const updatedJob: Job = {
+      ...editingJob,
+      title: jobForm.title,
+      description: jobForm.description,
+      property_type: jobForm.property_type,
+      area: jobForm.area,
+      budget_min: parseInt(jobForm.budget_min) || 0,
+      budget_max: parseInt(jobForm.budget_max) || 0,
+      updated_at: new Date().toISOString()
+    }
+
+    // Update local state
+    setJobs(prev => prev.map(j => j.id === editingJob.id ? updatedJob : j))
+    
+    // Update localStorage
+    const stored = localStorage.getItem('contractor_jobs')
+    if (stored) {
+      const existing = JSON.parse(stored)
+      const updated = existing.map((j: Job) => j.id === editingJob.id ? updatedJob : j)
+      localStorage.setItem('contractor_jobs', JSON.stringify(updated))
+    }
+    
+    setEditingJob(null)
+    setJobForm({ title: '', description: '', property_type: 'residential', area: '', budget_min: '', budget_max: '' })
+    setActiveTab('jobs')
+    setSubmitting(false)
+    alert('Job updated successfully!')
+  }
+
+  const handleDeleteJob = (jobId: string) => {
+    if (!confirm('Are you sure you want to delete this job?')) return
+    
+    setJobs(prev => prev.filter(j => j.id !== jobId))
+    
+    const stored = localStorage.getItem('contractor_jobs')
+    if (stored) {
+      const existing = JSON.parse(stored)
+      const updated = existing.filter((j: Job) => j.id !== jobId)
+      localStorage.setItem('contractor_jobs', JSON.stringify(updated))
+    }
+  }
+
   const handleSignOut = async () => {
     sessionStorage.removeItem('tradesource_user')
     if (isSupabaseConfigured()) {
@@ -354,7 +417,23 @@ export default function DashboardPage() {
                         {job.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-3">Posted {new Date(job.created_at).toLocaleDateString()}</p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleEditJob(job)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        title="Edit this job"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteJob(job.id)}
+                        className="text-sm text-red-600 hover:text-red-800 font-medium"
+                        title="Delete this job"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Posted {new Date(job.created_at).toLocaleDateString()}</p>
                   </div>
                 ))}
               </div>
@@ -365,8 +444,10 @@ export default function DashboardPage() {
         {/* Post Job Tab */}
         {activeTab === 'post' && (
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="font-bold text-lg text-gray-900 mb-6">Post a New Job</h2>
-            <form onSubmit={handlePostJob} className="space-y-4">
+            <h2 className="font-bold text-lg text-gray-900 mb-6">
+              {editingJob ? 'Edit Job' : 'Post a New Job'}
+            </h2>
+            <form onSubmit={editingJob ? handleUpdateJob : handlePostJob} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
                 <input
@@ -443,13 +524,24 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {submitting ? 'Posting...' : 'Post Job'}
-              </button>
+              <div className="flex gap-3">
+                {editingJob && (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingJob(null); setJobForm({ title: '', description: '', property_type: 'residential', area: '', budget_min: '', budget_max: '' }); }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {submitting ? (editingJob ? 'Updating...' : 'Posting...') : (editingJob ? 'Update Job' : 'Post Job')}
+                </button>
+              </div>
             </form>
           </div>
         )}

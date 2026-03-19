@@ -16,6 +16,7 @@ interface Job {
   budget_max: number
   status: 'open' | 'in_progress' | 'completed' | 'cancelled'
   created_at: string
+  updated_at?: string
 }
 
 export default function HomeownerDashboardPage() {
@@ -36,6 +37,9 @@ export default function HomeownerDashboardPage() {
     budget_max: ''
   })
   const [submitting, setSubmitting] = useState(false)
+  const [editingJob, setEditingJob] = useState<Job | null>(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ type: string; jobId?: string } | null>(null)
 
   useEffect(() => {
     checkUser()
@@ -146,6 +150,109 @@ export default function HomeownerDashboardPage() {
     alert('Job posted successfully! Verified contractors will see your job.')
   }
 
+  const handleEditJob = (job: Job) => {
+    setEditingJob(job)
+    setJobForm({
+      title: job.title,
+      description: job.description,
+      property_type: job.property_type,
+      address: job.address || '',
+      area: job.area,
+      budget_min: job.budget_min.toString(),
+      budget_max: job.budget_max.toString()
+    })
+    setActiveTab('post')
+  }
+
+  const handleUpdateJob = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingJob) return
+    
+    setSubmitting(true)
+    
+    const updatedJob: Job = {
+      ...editingJob,
+      title: jobForm.title,
+      description: jobForm.description,
+      property_type: jobForm.property_type,
+      address: jobForm.address,
+      area: jobForm.area,
+      budget_min: parseInt(jobForm.budget_min) || 0,
+      budget_max: parseInt(jobForm.budget_max) || 0,
+      updated_at: new Date().toISOString()
+    }
+
+    // Update local state
+    setJobs(prev => prev.map(j => j.id === editingJob.id ? updatedJob : j))
+    
+    // Update localStorage
+    const stored = localStorage.getItem('homeowner_jobs')
+    if (stored) {
+      const existing = JSON.parse(stored)
+      const updated = existing.map((j: Job) => j.id === editingJob.id ? updatedJob : j)
+      localStorage.setItem('homeowner_jobs', JSON.stringify(updated))
+    }
+    
+    setEditingJob(null)
+    setJobForm({ title: '', description: '', property_type: 'residential', address: '', area: '', budget_min: '', budget_max: '' })
+    setActiveTab('my-jobs')
+    setSubmitting(false)
+    alert('Job updated successfully!')
+  }
+
+  const handleDeleteJob = (jobId: string) => {
+    setConfirmAction({ type: 'deleteJob', jobId })
+    setShowConfirmModal(true)
+  }
+
+  const confirmDeleteJob = () => {
+    if (!confirmAction?.jobId) return
+    
+    const jobId = confirmAction.jobId
+    setJobs(prev => prev.filter(j => j.id !== jobId))
+    
+    // Update localStorage
+    const stored = localStorage.getItem('homeowner_jobs')
+    if (stored) {
+      const existing = JSON.parse(stored)
+      const updated = existing.filter((j: Job) => j.id !== jobId)
+      localStorage.setItem('homeowner_jobs', JSON.stringify(updated))
+    }
+    
+    setShowConfirmModal(false)
+    setConfirmAction(null)
+  }
+
+  // Custom confirm modal
+  const ConfirmModal = () => {
+    if (!showConfirmModal) return null
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-sm w-full p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Job?</h3>
+          <p className="text-gray-600 text-sm mb-6">
+            Are you sure you want to delete this job? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowConfirmModal(false); setConfirmAction(null); }}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDeleteJob}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const handleSignOut = async () => {
     sessionStorage.removeItem('tradesource_homeowner')
     if (isSupabaseConfigured()) {
@@ -237,7 +344,23 @@ export default function HomeownerDashboardPage() {
                         {job.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-3">Posted {new Date(job.created_at).toLocaleDateString()}</p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleEditJob(job)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        title="Edit this job"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteJob(job.id)}
+                        className="text-sm text-red-600 hover:text-red-800 font-medium"
+                        title="Delete this job"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">Posted {new Date(job.created_at).toLocaleDateString()}</p>
                   </div>
                 ))}
               </div>
@@ -251,8 +374,10 @@ export default function HomeownerDashboardPage() {
             <PriceEstimator />
             
             <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="font-bold text-lg text-gray-900 mb-6">Post a New Painting Job</h2>
-            <form onSubmit={handlePostJob} className="space-y-4">
+            <h2 className="font-bold text-lg text-gray-900 mb-6">
+              {editingJob ? 'Edit Painting Job' : 'Post a New Painting Job'}
+            </h2>
+            <form onSubmit={editingJob ? handleUpdateJob : handlePostJob} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
                 <input
@@ -337,17 +462,31 @@ export default function HomeownerDashboardPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
-              >
-                {submitting ? 'Posting...' : 'Post Job'}
-              </button>
+              <div className="flex gap-3">
+                {editingJob && (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingJob(null); setJobForm({ title: '', description: '', property_type: 'residential', address: '', area: '', budget_min: '', budget_max: '' }); }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
+                >
+                  {submitting ? (editingJob ? 'Updating...' : 'Posting...') : (editingJob ? 'Update Job' : 'Post Job')}
+                </button>
+              </div>
             </form>
           </div>
           </div>
         )}
+
+        {/* Custom Confirmation Modal */}
+        <ConfirmModal />
       </div>
     </main>
   )

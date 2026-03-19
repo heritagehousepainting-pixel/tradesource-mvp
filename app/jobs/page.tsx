@@ -21,8 +21,10 @@ interface Job {
 export default function JobsFeedPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>([])
+  const [allJobs, setAllJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [interestedJobs, setInterestedJobs] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Load jobs on mount
   useEffect(() => {
@@ -42,15 +44,34 @@ export default function JobsFeedPage() {
         const openJobs = parsed.filter((job: Job) => job.status === 'open')
         console.log('Open jobs after filter:', openJobs.length)
         setJobs(openJobs)
+        setAllJobs(openJobs)
       } catch (e) {
         console.error('Failed to parse jobs from localStorage:', e)
         setJobs([])
+        setAllJobs([])
       }
     } else {
       console.log('No jobs found in localStorage')
     }
     setLoading(false)
   }, [])
+
+  // Filter jobs based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setJobs(allJobs)
+      return
+    }
+    
+    const query = searchQuery.toLowerCase()
+    const filtered = allJobs.filter(job => 
+      job.title.toLowerCase().includes(query) ||
+      job.description.toLowerCase().includes(query) ||
+      job.area.toLowerCase().includes(query) ||
+      job.property_type.toLowerCase().includes(query)
+    )
+    setJobs(filtered)
+  }, [searchQuery, allJobs])
 
   const handleInterest = (jobId: string) => {
     setInterestedJobs(prev => new Set(prev).add(jobId))
@@ -91,6 +112,40 @@ export default function JobsFeedPage() {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Available Painting Jobs</h1>
+        
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search jobs by title, description, location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <svg 
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-sm text-gray-500 mt-2">
+              Found {jobs.length} {jobs.length === 1 ? 'job' : 'jobs'} matching "{searchQuery}"
+            </p>
+          )}
+        </div>
 
         {jobs.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
@@ -133,6 +188,7 @@ export default function JobsFeedPage() {
                     <button
                       onClick={() => handleInterest(job.id)}
                       disabled={interestedJobs.has(job.id)}
+                      title={interestedJobs.has(job.id) ? 'You have already expressed interest in this job' : 'Express interest in this job'}
                       className={`px-4 py-2 rounded-lg text-sm font-medium ${
                         interestedJobs.has(job.id)
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
