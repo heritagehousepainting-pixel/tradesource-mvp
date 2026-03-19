@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 import PriceEstimator from '@/components/PriceEstimator'
 
 interface Job {
@@ -48,17 +48,48 @@ export default function HomeownerDashboardPage() {
   }, [user])
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/homeowner')
-    } else {
-      setUser(user)
+    // Check sessionStorage for mock login (MVP fallback)
+    const fakeUser = sessionStorage.getItem('tradesource_homeowner')
+    if (fakeUser) {
+      setUser(JSON.parse(fakeUser))
       setLoading(false)
+      return
     }
+    
+    // Try Supabase auth if configured
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUser(user)
+          setLoading(false)
+          return
+        }
+      } catch (e) { /* continue to login */ }
+    }
+    
+    router.push('/homeowner')
   }
 
   const loadJobs = async () => {
-    // Try localStorage first (MVP)
+    // Try Supabase first
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('homeowner_id', user?.id)
+          .order('created_at', { ascending: false })
+        if (data) {
+          setJobs(data)
+          return
+        }
+      } catch (e) { /* fallback */ }
+    }
+    
+    // Fallback: localStorage
     const stored = localStorage.getItem('homeowner_jobs')
     if (stored) {
       setJobs(JSON.parse(stored))
@@ -78,10 +109,26 @@ export default function HomeownerDashboardPage() {
       created_at: new Date().toISOString()
     }
 
-    // Save to localStorage
-    const stored = localStorage.getItem('homeowner_jobs')
-    const existing = stored ? JSON.parse(stored) : []
-    localStorage.setItem('homeowner_jobs', JSON.stringify([newJob, ...existing]))
+    // Try Supabase first
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase.from('jobs').insert({
+          ...newJob,
+          homeowner_id: user?.id
+        })
+      } catch (e) {
+        // Fallback to localStorage
+        const stored = localStorage.getItem('homeowner_jobs')
+        const existing = stored ? JSON.parse(stored) : []
+        localStorage.setItem('homeowner_jobs', JSON.stringify([newJob, ...existing]))
+      }
+    } else {
+      // Fallback to localStorage
+      const stored = localStorage.getItem('homeowner_jobs')
+      const existing = stored ? JSON.parse(stored) : []
+      localStorage.setItem('homeowner_jobs', JSON.stringify([newJob, ...existing]))
+    }
     
     setJobs(prev => [newJob, ...prev])
     setJobForm({ title: '', description: '', property_type: 'residential', address: '', area: '', budget_min: '', budget_max: '' })
@@ -91,7 +138,13 @@ export default function HomeownerDashboardPage() {
   }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    sessionStorage.removeItem('tradesource_homeowner')
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase.auth.signOut()
+      } catch (e) { /* ignore */ }
+    }
     router.push('/homeowner')
   }
 

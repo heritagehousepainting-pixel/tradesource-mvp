@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,12 +17,59 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // First check localStorage for approved contractors (MVP fallback)
+      // Check if Supabase is properly configured
+      if (isSupabaseConfigured()) {
+        const supabase = getSupabaseBrowserClient()
+        
+        const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (supabaseError) {
+          setError('Invalid email or password')
+          setLoading(false)
+          return
+        }
+
+        if (data.user) {
+          // Check if contractor is approved in the database
+          const { data: contractor } = await supabase
+            .from('contractors')
+            .select('status, email')
+            .eq('email', email)
+            .single()
+
+          if (contractor && contractor.status === 'approved') {
+            router.push('/dashboard')
+          } else {
+            // Check applications
+            const { data: app } = await supabase
+              .from('contractor_applications')
+              .select('status')
+              .eq('email', email)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+
+            if (app && app.status === 'approved') {
+              router.push('/dashboard')
+            } else {
+              await supabase.auth.signOut()
+              setError('Your account is not yet approved')
+            }
+          }
+          setLoading(false)
+          return
+        }
+      }
+
+      // Fallback: Check localStorage for approved contractors (MVP demo)
       const approvedContractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
-      const contractor = approvedContractors.find((c: any) => c.email === email)
+      const contractor = approvedContractors.find((c: any) => c.email === email && c.status === 'approved')
       
       if (contractor) {
-        // Store fake auth session in localStorage
+        // Store fake auth session in sessionStorage
         sessionStorage.setItem('tradesource_user', JSON.stringify({
           email: contractor.email,
           name: contractor.name,
@@ -32,18 +79,7 @@ export default function LoginPage() {
         return
       }
 
-      // Try Supabase auth
-      const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (supabaseError) {
-        setError('Invalid email or password')
-      } else if (data.user) {
-        // Redirect to contractor dashboard
-        router.push('/dashboard')
-      }
+      setError('Invalid email or password')
     } catch (err) {
       setError('An unexpected error occurred')
     } finally {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 
 interface Job {
   id: string
@@ -58,7 +58,50 @@ export default function DashboardPage() {
   }, [user])
 
   const checkUser = async () => {
-    // Check sessionStorage for fake login (MVP)
+    // Try real Supabase auth first
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          setUser(user)
+          
+          // Check contractor verification status in database
+          const { data: contractor } = await supabase
+            .from('contractors')
+            .select('status, name, email, company, phone, license_number')
+            .eq('email', user.email)
+            .single()
+
+          if (contractor) {
+            setContractor(contractor)
+            setVerificationStatus(contractor.status)
+          } else {
+            const { data: app } = await supabase
+              .from('contractor_applications')
+              .select('status')
+              .eq('email', user.email)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single()
+            
+            if (app?.status) {
+              setVerificationStatus(app.status)
+            } else {
+              setVerificationStatus('not_found')
+            }
+          }
+          
+          setLoading(false)
+          return
+        }
+      } catch (e) {
+        console.error('Supabase auth error:', e)
+      }
+    }
+    
+    // Fallback: Check sessionStorage for fake login (MVP)
     const fakeUser = sessionStorage.getItem('tradesource_user')
     if (fakeUser) {
       const userData = JSON.parse(fakeUser)
@@ -66,80 +109,38 @@ export default function DashboardPage() {
       
       // Check if approved
       const approved = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
-      const contractor = approved.find((c: any) => c.email === userData.email)
+      const contractor = approved.find((c: any) => c.email === userData.email && c.status === 'approved')
       
       if (contractor) {
         setVerificationStatus('approved')
         setContractor(contractor)
       } else {
-        setVerificationStatus('unknown')
+        setVerificationStatus('pending_review')
       }
       
       setLoading(false)
       return
     }
     
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    
-    setUser(user)
-    
-    // Check contractor verification status
-    let status = null
-    try {
-      const { data } = await supabase
-        .from('contractors')
-        .select('status')
-        .eq('email', user.email)
-        .single()
-      
-      if (data?.status) {
-        status = data.status
-      } else {
-        const { data: app } = await supabase
-          .from('contractor_applications')
-          .select('status')
-          .eq('email', user.email)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        
-        if (app?.status) {
-          status = app.status
-        }
-      }
-    } catch (e) {
-      // Check localStorage for approved contractors
-      const approved = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
-      const found = approved.find((c: any) => c.email === user.email)
-      if (found) {
-        status = 'approved'
-      } else {
-        const stored = localStorage.getItem('contractor_status')
-        if (stored) status = stored
-      }
-    }
-    
-    setVerificationStatus(status || 'unknown')
-    setLoading(false)
+    router.push('/login')
   }
 
   const loadJobs = async () => {
     // Try Supabase first, fallback to localStorage
-    try {
-      const { data } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('contractor_id', user?.id)
-        .order('created_at', { ascending: false })
-      if (data) {
-        setJobs(data)
-        return
-      }
-    } catch (e) { /* fallback */ }
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('contractor_id', user?.id)
+          .order('created_at', { ascending: false })
+        if (data) {
+          setJobs(data)
+          return
+        }
+      } catch (e) { /* fallback */ }
+    }
     
     // Fallback: localStorage
     const stored = localStorage.getItem('contractor_jobs')
@@ -149,17 +150,20 @@ export default function DashboardPage() {
   }
 
   const loadContractor = async () => {
-    try {
-      const { data } = await supabase
-        .from('contractors')
-        .select('*')
-        .eq('email', user?.email)
-        .single()
-      if (data) {
-        setContractor(data)
-        return
-      }
-    } catch (e) { /* fallback */ }
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data } = await supabase
+          .from('contractors')
+          .select('*')
+          .eq('email', user?.email)
+          .single()
+        if (data) {
+          setContractor(data)
+          return
+        }
+      } catch (e) { /* fallback */ }
+    }
     
     // Fallback: localStorage
     const stored = localStorage.getItem('contractor_profile')
@@ -181,12 +185,20 @@ export default function DashboardPage() {
       created_at: new Date().toISOString()
     }
 
-    try {
-      await supabase.from('jobs').insert({
-        ...newJob,
-        contractor_id: user?.id
-      })
-    } catch (e) {
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase.from('jobs').insert({
+          ...newJob,
+          contractor_id: user?.id
+        })
+      } catch (e) {
+        // Fallback to localStorage
+        const stored = localStorage.getItem('contractor_jobs')
+        const existing = stored ? JSON.parse(stored) : []
+        localStorage.setItem('contractor_jobs', JSON.stringify([newJob, ...existing]))
+      }
+    } else {
       // Fallback to localStorage
       const stored = localStorage.getItem('contractor_jobs')
       const existing = stored ? JSON.parse(stored) : []
@@ -202,7 +214,12 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     sessionStorage.removeItem('tradesource_user')
-    await supabase.auth.signOut()
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase.auth.signOut()
+      } catch (e) { /* ignore */ }
+    }
     router.push('/')
   }
 

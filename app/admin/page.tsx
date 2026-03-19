@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 
 interface Application {
   id: string
@@ -72,29 +72,49 @@ export default function AdminPage() {
 
   const fetchApplications = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('contractor_applications')
-      .select('*')
-      .order('created_at', { ascending: false })
     
-    if (!error && data && data.length > 0) {
-      setApplications(data)
-    } else {
+    let appsData: Application[] | null = null
+    
+    // Try Supabase first
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        const { data, error } = await supabase
+          .from('contractor_applications')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (!error && data && data.length > 0) {
+          appsData = data
+        }
+      } catch (e) { /* fallback to localStorage */ }
+    }
+    
+    if (!appsData) {
       // Fallback: read from localStorage
       const stored = localStorage.getItem('contractor_applications')
       if (stored) {
-        setApplications(JSON.parse(stored))
+        appsData = JSON.parse(stored)
       }
+    }
+    
+    if (appsData) {
+      setApplications(appsData)
     }
     setLoading(false)
   }
 
   const updateVerification = async (id: string, field: string, value: boolean) => {
     // Try Supabase update
-    const { error } = await supabase
-      .from('contractor_applications')
-      .update({ [field]: value })
-      .eq('id', id)
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase
+          .from('contractor_applications')
+          .update({ [field]: value })
+          .eq('id', id)
+      } catch (e) { /* localStorage fallback will handle it */ }
+    }
 
     // Update local state regardless
     setApplications(applications.map(app => 
@@ -188,7 +208,12 @@ export default function AdminPage() {
   }
 
   const rejectApplication = async (id: string) => {
-    await supabase.from('contractor_applications').update({ status: 'rejected' }).eq('id', id)
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient()
+        await supabase.from('contractor_applications').update({ status: 'rejected' }).eq('id', id)
+      } catch (e) { /* fallback to local */ }
+    }
     
     // Update local state
     setApplications(applications.map(a => 

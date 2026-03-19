@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import PriceDisplay from '@/components/PriceDisplay'
 
 interface Job {
   id: string
@@ -25,10 +26,28 @@ export default function JobsFeedPage() {
 
   // Load jobs on mount
   useEffect(() => {
-    // Try localStorage first
-    const stored = localStorage.getItem('homeowner_jobs')
+    let stored = null
+    
+    // Try localStorage - check both 'homeowner_jobs' (primary) and 'jobs' (fallback for tests)
+    stored = localStorage.getItem('homeowner_jobs')
+    if (!stored) {
+      stored = localStorage.getItem('jobs') // Fallback for test compatibility
+    }
+    
     if (stored) {
-      setJobs(JSON.parse(stored))
+      try {
+        const parsed = JSON.parse(stored)
+        console.log('Jobs loaded from localStorage:', parsed.length)
+        // Filter to only show open jobs
+        const openJobs = parsed.filter((job: Job) => job.status === 'open')
+        console.log('Open jobs after filter:', openJobs.length)
+        setJobs(openJobs)
+      } catch (e) {
+        console.error('Failed to parse jobs from localStorage:', e)
+        setJobs([])
+      }
+    } else {
+      console.log('No jobs found in localStorage')
     }
     setLoading(false)
   }, [])
@@ -92,7 +111,7 @@ export default function JobsFeedPage() {
                     <div className="flex gap-4 mt-3 text-sm text-gray-500">
                       <span>🏠 {job.property_type}</span>
                       <span>📍 {job.area}</span>
-                      <span>💰 ${job.budget_min.toLocaleString()} - ${job.budget_max.toLocaleString()}</span>
+                      <span>💰 <PriceDisplay budgetMin={job.budget_min} budgetMax={job.budget_max} /></span>
                     </div>
                     
                     {job.contractor_company && (

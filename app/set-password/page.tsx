@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 
 function SetPasswordContent() {
   const searchParams = useSearchParams()
@@ -16,7 +17,7 @@ function SetPasswordContent() {
 
   useEffect(() => {
     if (!token) {
-      // Invalid token
+      // Invalid token - already handled by showing "Invalid Link" in render
     }
   }, [token])
 
@@ -36,7 +37,7 @@ function SetPasswordContent() {
     
     setLoading(true)
     
-    // Verify token and set password from localStorage
+    // Verify token
     const pendingUsers = JSON.parse(localStorage.getItem('pending_password_set') || '{}')
     const userData = pendingUsers[token as string]
     
@@ -45,8 +46,34 @@ function SetPasswordContent() {
       setLoading(false)
       return
     }
+
+    // Try to use Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch('/api/set-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            email: userData.email,
+            password,
+            name: userData.name,
+            company: userData.company
+          })
+        })
+        
+        const result = await response.json()
+        
+        if (!response.ok) {
+          // Fall back to localStorage if API fails
+          console.warn('Supabase password setup failed, using localStorage fallback:', result.error)
+        }
+      } catch (e) {
+        console.warn('Supabase API call failed, using localStorage fallback:', e)
+      }
+    }
     
-    // Save approved contractor with password (in real app, hash the password)
+    // Always save to localStorage as fallback
     const contractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
     const updated = contractors.map((c: any) => 
       c.email === userData.email ? { ...c, password, password_set: true } : c

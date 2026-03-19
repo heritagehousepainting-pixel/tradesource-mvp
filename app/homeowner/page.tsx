@@ -1,12 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useState, Suspense, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
 
-export default function HomeownerPage() {
+function HomeownerPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Check for signup mode - read from URL on mount to handle initial render
   const [isSignUp, setIsSignUp] = useState(false)
+  
+  // Initialize from URL search params on mount
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    console.log('Search params mode:', mode)
+    if (mode === 'signup') {
+      setIsSignUp(true)
+    }
+  }, [searchParams])
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -24,6 +35,49 @@ export default function HomeownerPage() {
     setSuccess('')
 
     try {
+      // Check if Supabase is configured
+      if (!isSupabaseConfigured()) {
+        // Use localStorage fallback for MVP
+        if (isSignUp) {
+          const homeowners = JSON.parse(localStorage.getItem('homeowners') || '[]')
+          homeowners.push({
+            ...formData,
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString()
+          })
+          localStorage.setItem('homeowners', JSON.stringify(homeowners))
+          
+          // Store in session
+          sessionStorage.setItem('tradesource_homeowner', JSON.stringify({
+            email: formData.email,
+            name: formData.name
+          }))
+          
+          setSuccess('Account created! You can now post jobs.')
+          setFormData({ name: '', email: '', password: '', phone: '' })
+          router.push('/homeowner-dashboard')
+        } else {
+          // Login - check localStorage
+          const homeowners = JSON.parse(localStorage.getItem('homeowners') || '[]')
+          const user = homeowners.find((h: any) => h.email === formData.email && h.password === formData.password)
+          
+          if (user) {
+            sessionStorage.setItem('tradesource_homeowner', JSON.stringify({
+              email: user.email,
+              name: user.name
+            }))
+            router.push('/homeowner-dashboard')
+          } else {
+            setError('Invalid email or password')
+          }
+        }
+        setLoading(false)
+        return
+      }
+
+      // Real Supabase auth
+      const supabase = getSupabaseBrowserClient()
+      
       if (isSignUp) {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
@@ -35,7 +89,7 @@ export default function HomeownerPage() {
         } else if (data.user) {
           // Create homeowner profile
           await supabase.from('homeowners').insert({
-            id: data.user.id,
+            user_id: data.user.id,
             name: formData.name,
             email: formData.email,
             phone: formData.phone || null
@@ -48,7 +102,7 @@ export default function HomeownerPage() {
           email: formData.email,
           password: formData.password,
         })
-        
+
         if (signInError) {
           setError(signInError.message)
         } else if (data.user) {
@@ -225,5 +279,13 @@ export default function HomeownerPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function HomeownerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-500">Loading...</p></div>}>
+      <HomeownerPageContent />
+    </Suspense>
   )
 }
