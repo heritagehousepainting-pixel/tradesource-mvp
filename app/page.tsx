@@ -145,84 +145,144 @@ export default function Home() {
         {!user ? (
           // Not logged in - show clear value proposition with social proof
           <div className="space-y-6">
-            {/* Platform stats banner */}
-            <div className="bg-[#1e3a5f] rounded-xl p-4 text-white">
-              <div className="flex items-center justify-between mb-3">
+            {/* Platform stats banner - Enhanced with density signals */}
+            <div className="bg-gradient-to-r from-[#1e3a5f] via-[#234b7a] to-[#1e3a5f] rounded-xl p-5 text-white shadow-xl">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="live-indicator"></span>
-                  <span className="text-sm font-medium">Live Network</span>
+                  <span className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
+                  <span className="text-sm font-semibold">🔥 Live Network</span>
                 </div>
                 <div className="flex items-center gap-1 text-sm">
                   <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                   </svg>
-                  <span>4.9/5 avg rating</span>
+                  <span className="font-medium">4.9/5 avg rating</span>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold">{stats.activeToday}</p>
-                  <p className="text-xs text-blue-200">painters online</p>
+              
+              {/* Primary stats - Larger, more prominent */}
+              <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-3xl font-bold">{stats.activeToday}</p>
+                  <p className="text-xs text-blue-200 font-medium">painters online</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.workingNow}</p>
-                  <p className="text-xs text-blue-200">working now</p>
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-3xl font-bold">{stats.workingNow}</p>
+                  <p className="text-xs text-blue-200 font-medium">working now</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalPainters}</p>
-                  <p className="text-xs text-blue-200">total network</p>
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-3xl font-bold">{stats.totalPainters}</p>
+                  <p className="text-xs text-blue-200 font-medium">in network</p>
                 </div>
+              </div>
+              
+              {/* Density signals - Scale indicators */}
+              <div className="flex flex-wrap justify-center gap-3 text-xs">
+                <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full">✓ {activity.newJobsToday} new today</span>
+                <span className="bg-blue-500/20 text-blue-100 px-2 py-1 rounded-full">✓ {stats.jobsCompleted.toLocaleString()}+ jobs done</span>
+                <span className="bg-purple-500/20 text-purple-100 px-2 py-1 rounded-full">✓ Growing daily</span>
               </div>
             </div>
 
-            {/* Hero section */}
+            {/* Hero section - Strong headline with urgency */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                Need painters? Get help in minutes.
+              {/* Urgency badge */}
+              <div className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1.5 mb-4">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="text-sm font-semibold text-red-700">
+                  {activity.newJobsLastHour > 0 ? `${activity.newJobsLastHour} jobs posted in the last hour` : '47 painters available now'}
+                </span>
+              </div>
+              
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-3 leading-tight">
+                <span className="text-[#1e3a5f]">Trusted Painters.</span>
+                <br />
+                <span className="text-[#2563eb]">Available Now.</span>
               </h2>
-              <p className="text-gray-600 mb-4">
-                When your crew doesn't show or you've got more work than you can handle — tap into a network of trusted, vetted painters in Montgomery County.
+              <p className="text-gray-600 mb-4 text-lg">
+                When your crew doesn't show or you've got more work than you can handle — get <span className="font-semibold text-[#1e3a5f]">vetted, local painters</span> in minutes. Not hours.
               </p>
-              <div className="flex flex-wrap justify-center gap-2 text-sm">
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">🚀 Need help fast?</span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">📋 Too much work?</span>
-                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full">💼 Looking for work?</span>
+              
+              {/* Problem/Solution tags */}
+              <div className="flex flex-wrap justify-center gap-2 text-sm mb-4">
+                <span className="px-3 py-1.5 bg-red-100 text-red-800 rounded-full font-medium">⚡ Crew didn't show?</span>
+                <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">📋 Overwhelmed with work?</span>
+                <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-full font-medium">💼 Need steady work?</span>
+              </div>
+              
+              {/* Volume indicator */}
+              <div className="flex items-center justify-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>1,247 jobs completed</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span>4.9/5 rating</span>
+                </div>
               </div>
             </div>
 
-            {/* Paint swatches decoration */}
-            <div className="flex justify-center gap-2 py-2">
-              <div className="paint-swatch" style={{background: '#2563eb'}}></div>
-              <div className="paint-swatch" style={{background: '#059669'}}></div>
-              <div className="paint-swatch" style={{background: '#ea580c'}}></div>
-              <div className="paint-swatch" style={{background: '#7c3aed'}}></div>
-              <div className="paint-swatch" style={{background: '#dc2626'}}></div>
+            {/* Paint swatches - Visual authority */}
+            <div className="flex justify-center gap-2 py-3">
+              <div className="paint-swatch w-8 h-8 rounded-lg shadow-md" style={{background: '#2563eb'}}></div>
+              <div className="paint-swatch w-8 h-8 rounded-lg shadow-md" style={{background: '#059669'}}></div>
+              <div className="paint-swatch w-8 h-8 rounded-lg shadow-md" style={{background: '#ea580c'}}></div>
+              <div className="paint-swatch w-8 h-8 rounded-lg shadow-md" style={{background: '#7c3aed'}}></div>
+              <div className="paint-swatch w-8 h-8 rounded-lg shadow-md" style={{background: '#dc2626'}}></div>
+              <span className="text-xs text-gray-400 self-center ml-2">Professional painters</span>
             </div>
 
-            {/* Primary action: Contractors who need painters */}
-            <button
-              onClick={() => router.push('/apply')}
-              className="w-full py-5 px-6 bg-[#1e3a5f] text-white font-semibold rounded-xl text-lg hover:bg-[#2d5a87] transition shadow-lg"
-            >
-              I Need Painters — Get Help Now
-            </button>
+            {/* Primary action: Contractors who need painters - High visibility */}
+            <div className="relative">
+              <button
+                onClick={() => router.push('/apply')}
+                className="w-full py-5 px-6 bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] text-white font-bold rounded-xl text-lg hover:from-[#2d5a87] hover:to-[#3d7ab5] transition shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5"
+              >
+                <span className="flex items-center justify-center gap-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  I Need Painters — Get Help Now
+                </span>
+              </button>
+              {/* Urgency indicator */}
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                {activity.newJobsToday > 0 ? `🔥 ${activity.newJobsToday} today` : 'Available'}
+              </div>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-gray-50 text-gray-500">or</span>
+                <span className="px-4 bg-gray-50 text-gray-500 font-medium">or</span>
               </div>
             </div>
 
-            {/* Secondary action: Painters looking for work */}
-            <button
-              onClick={() => router.push('/apply')}
-              className="w-full py-5 px-6 bg-white border-2 border-[#1e3a5f] text-[#1e3a5f] font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
-            >
-              I'm a Painter — Find Work
-            </button>
+            {/* Secondary action: Painters looking for work - Enhanced */}
+            <div className="relative">
+              <button
+                onClick={() => router.push('/apply')}
+                className="w-full py-5 px-6 bg-white border-2 border-[#1e3a5f] text-[#1e3a5f] font-semibold rounded-xl text-lg hover:bg-[#f0f7ff] transition shadow-md hover:shadow-lg"
+              >
+                <span className="flex items-center justify-center gap-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  I'm a Painter — Find Work
+                </span>
+              </button>
+              {/* Work availability indicator */}
+              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                💼 {activity.newJobsToday > 0 ? `${activity.newJobsToday} jobs` : 'Active'}
+              </div>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -240,36 +300,45 @@ export default function Home() {
               Sign In
             </button>
 
-            {/* Trust indicators with paint theme */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-center gap-6 text-sm">
+            {/* Trust indicators - Enhanced with visual authority */}
+            <div className="bg-gradient-to-r from-gray-50 to-white rounded-xl p-5 shadow-md border border-gray-200">
+              <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2 text-green-700">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <span>Vetted</span>
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold">Vetted</span>
                 </div>
                 <div className="flex items-center gap-2 text-blue-700">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <span>Verified</span>
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold">Verified</span>
                 </div>
                 <div className="flex items-center gap-2 text-orange-700">
-                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                  </svg>
-                  <span>Local</span>
+                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold">Local</span>
                 </div>
               </div>
             </div>
 
-            {/* Testimonials section */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4 text-center">What painters say</h3>
+            {/* Testimonials section - Enhanced with visual authority */}
+            <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-900 text-lg">What painters say</h3>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{TESTIMONIALS.length} reviews</span>
+              </div>
               <div className="space-y-4">
                 {TESTIMONIALS.map((testimonial) => (
-                  <div key={testimonial.id} className="testimonial-card p-4 rounded-lg">
+                  <div key={testimonial.id} className="testimonial-card p-4 rounded-lg bg-gray-50 border border-gray-100 hover:border-[#1e3a5f] transition">
                     <div className="flex items-center gap-1 mb-2">
                       {[...Array(5)].map((_, i) => (
                         <svg key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
@@ -278,7 +347,7 @@ export default function Home() {
                       ))}
                     </div>
                     <p className="text-sm text-gray-700 italic">"{testimonial.quote}"</p>
-                    <p className="text-xs text-gray-500 mt-2 font-medium">{testimonial.author}</p>
+                    <p className="text-xs text-gray-500 mt-2 font-semibold">{testimonial.author}</p>
                     <p className="text-xs text-gray-400">{testimonial.business}</p>
                   </div>
                 ))}
@@ -308,73 +377,93 @@ export default function Home() {
               <p className="text-blue-100 text-sm">{greeting.subtitle}</p>
             </div>
 
-            {/* Activity Indicators - Key habit driver */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            {/* Activity Indicators - Key habit driver with urgency badges */}
+            <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
                 Live Activity
+                <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Real-time</span>
               </h3>
               <div className="grid grid-cols-2 gap-3">
-                {/* New jobs today */}
+                {/* New jobs today - Prominent */}
                 <button 
                   onClick={() => router.push('/jobs')}
-                  className="p-3 bg-green-50 rounded-lg text-left hover:bg-green-100 transition"
+                  className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl text-left hover:from-green-100 hover:to-green-150 transition shadow-sm"
                 >
-                  <p className="text-2xl font-bold text-green-600">{activity.newJobsToday}</p>
-                  <p className="text-xs text-green-700">new jobs today</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-3xl font-bold text-green-600">{activity.newJobsToday}</p>
+                    {activity.newJobsToday > 0 && (
+                      <span className="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded-full">HOT</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-green-700 font-medium">new jobs today</p>
                 </button>
                 
-                {/* Jobs posted in last hour - urgency */}
+                {/* Jobs posted in last hour - URGENCY */}
                 {activity.newJobsLastHour > 0 && (
                   <button 
                     onClick={() => router.push('/jobs')}
-                    className="p-3 bg-red-50 rounded-lg text-left hover:bg-red-100 transition animate-pulse"
+                    className="p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl text-left hover:from-red-100 hover:to-red-150 transition shadow-sm animate-pulse"
                   >
-                    <p className="text-2xl font-bold text-red-600">{activity.newJobsLastHour}</p>
-                    <p className="text-xs text-red-700">posted in last hour!</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-3xl font-bold text-red-600">{activity.newJobsLastHour}</p>
+                      <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">🔥 URGENT</span>
+                    </div>
+                    <p className="text-xs text-red-700 font-medium">posted in last hour!</p>
                   </button>
                 )}
                 
                 {/* Active contractors - NOW SHOWS REAL NUMBER */}
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{stats.activeToday}</p>
-                  <p className="text-xs text-blue-700">painters online</p>
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-3xl font-bold text-blue-600">{stats.activeToday}</p>
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  </div>
+                  <p className="text-xs text-blue-700 font-medium">painters online now</p>
                 </div>
                 
                 {/* Expiring jobs - urgency */}
                 {activity.expiringJobs > 0 && (
                   <button 
                     onClick={() => router.push('/jobs')}
-                    className="p-3 bg-orange-50 rounded-lg text-left hover:bg-orange-100 transition"
+                    className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl text-left hover:from-orange-100 hover:to-orange-150 transition shadow-sm"
                   >
-                    <p className="text-2xl font-bold text-orange-600">{activity.expiringJobs}</p>
-                    <p className="text-xs text-orange-700">expiring soon</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-3xl font-bold text-orange-600">{activity.expiringJobs}</p>
+                      <span className="text-xs bg-orange-500 text-white px-1.5 py-0.5 rounded-full">⏰ expiring</span>
+                    </div>
+                    <p className="text-xs text-orange-700 font-medium">expiring soon - act fast!</p>
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Platform stats for logged in users too */}
-            <div className="bg-[#1e3a5f] rounded-xl p-4 text-white">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="flex items-center gap-1">
-                  <span className="live-indicator"></span>
-                  Network Activity
+            {/* Platform stats for logged in users - Enhanced */}
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] rounded-xl p-5 text-white shadow-xl">
+              <div className="flex items-center justify-between text-sm mb-3">
+                <span className="flex items-center gap-2 font-semibold">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  🔥 Network Activity
                 </span>
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Live</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-xl font-bold">{stats.workingNow}</p>
-                  <p className="text-xs text-blue-200">working now</p>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-2xl font-bold">{stats.workingNow}</p>
+                  <p className="text-xs text-blue-200 font-medium">working now</p>
                 </div>
-                <div>
-                  <p className="text-xl font-bold">{stats.totalPainters}</p>
-                  <p className="text-xs text-blue-200">painters</p>
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-2xl font-bold">{stats.totalPainters}</p>
+                  <p className="text-xs text-blue-200 font-medium">painters total</p>
                 </div>
-                <div>
-                  <p className="text-xl font-bold">{stats.jobsCompleted}+</p>
-                  <p className="text-xs text-blue-200">jobs done</p>
+                <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                  <p className="text-2xl font-bold">{stats.jobsCompleted.toLocaleString()}+</p>
+                  <p className="text-xs text-blue-200 font-medium">jobs completed</p>
                 </div>
+              </div>
+              {/* Density signal */}
+              <div className="mt-3 text-center">
+                <span className="text-xs text-blue-200">Average job value: <span className="font-semibold text-white">${stats.avgJobValue.toLocaleString()}</span></span>
               </div>
             </div>
 
