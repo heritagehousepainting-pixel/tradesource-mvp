@@ -28,6 +28,7 @@ export interface Job {
   status: 'open' | 'assigned' | 'completed'
   interested: string[]
   createdAt: string
+  expiresAt?: string // Optional expiration date for urgency
 }
 
 export interface Message {
@@ -43,7 +44,19 @@ const STORAGE_KEYS = {
   USERS: 'tradesource_users',
   JOBS: 'tradesource_jobs',
   MESSAGES: 'tradesource_messages',
-  CURRENT_USER: 'tradesource_current_user'
+  CURRENT_USER: 'tradesource_current_user',
+  NOTIFICATIONS: 'tradesource_notifications',
+  LAST_VISIT: 'tradesource_last_visit'
+}
+
+export interface Notification {
+  id: string
+  type: 'job_new' | 'job_expiring' | 'interest_received' | 'message' | 'job_matched'
+  title: string
+  body: string
+  jobId?: string
+  read: boolean
+  createdAt: string
 }
 
 // Generate UUID
@@ -143,6 +156,119 @@ export function setCurrentUser(user: User | null): void {
 
 export function logout(): void {
   localStorage.removeItem(STORAGE_KEYS.CURRENT_USER)
+}
+
+// Notifications
+export function getNotifications(): Notification[] {
+  if (typeof window === 'undefined') return []
+  const data = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)
+  return data ? JSON.parse(data) : []
+}
+
+export function saveNotification(notification: Notification): void {
+  const notifications = getNotifications()
+  notifications.unshift(notification)
+  // Keep only last 20 notifications
+  if (notifications.length > 20) {
+    notifications.length = 20
+  }
+  localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
+}
+
+export function markNotificationRead(id: string): void {
+  const notifications = getNotifications()
+  const notification = notifications.find(n => n.id === id)
+  if (notification) {
+    notification.read = true
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
+  }
+}
+
+export function markAllNotificationsRead(): void {
+  const notifications = getNotifications()
+  notifications.forEach(n => n.read = true)
+  localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
+}
+
+export function getUnreadNotificationCount(): number {
+  return getNotifications().filter(n => !n.read).length
+}
+
+// Activity Tracking for Habit Formation
+export function getLastVisit(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem(STORAGE_KEYS.LAST_VISIT)
+}
+
+export function updateLastVisit(): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(STORAGE_KEYS.LAST_VISIT, new Date().toISOString())
+}
+
+export function getActivitySummary(): { newJobsToday: number; newJobsLastHour: number; activeContractors: number; expiringJobs: number } {
+  const jobs = getOpenJobs()
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+  
+  // Count jobs posted today
+  const newJobsToday = jobs.filter(j => new Date(j.createdAt) >= todayStart).length
+  
+  // Count jobs posted in last hour (urgent!)
+  const newJobsLastHour = jobs.filter(j => new Date(j.createdAt) >= oneHourAgo).length
+  
+  // Count approved contractors (active)
+  const activeContractors = getUsers().filter(u => u.status === 'approved').length
+  
+  // Count jobs expiring soon (simulated: jobs older than 3 days considered "expiring soon")
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+  const expiringJobs = jobs.filter(j => new Date(j.createdAt) <= threeDaysAgo).length
+  
+  return { newJobsToday, newJobsLastHour, activeContractors, expiringJobs }
+}
+
+// Check and generate notifications based on activity (simulated for MVP)
+export function checkAndGenerateNotifications(userId: string): void {
+  const lastVisit = getLastVisit()
+  const jobs = getOpenJobs()
+  const users = getUsers()
+  const currentUser = users.find(u => u.id === userId)
+  
+  if (!lastVisit || !currentUser) return
+  
+  const lastVisitDate = new Date(lastVisit)
+  const now = new Date()
+  
+  // Check for new jobs since last visit
+  const newJobsSinceVisit = jobs.filter(j => new Date(j.createdAt) > lastVisitDate)
+  if (newJobsSinceVisit.length > 0) {
+    // Check if there's a job matching user's skills (simplified: any new job)
+    const skillMatchJob = newJobsSinceVisit[0]
+    saveNotification({
+      id: generateId(),
+      type: 'job_matched',
+      title: 'New jobs match your skills!',
+      body: `${newJobsSinceVisit.length} new job${newJobsSinceVisit.length > 1 ? 's' : ''} posted since your last visit`,
+      jobId: skillMatchJob.id,
+      read: false,
+      createdAt: now.toISOString()
+    })
+  }
+  
+  // Check for jobs expiring soon
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+  const expiringJobs = jobs.filter(j => new Date(j.createdAt) <= threeDaysAgo)
+  if (expiringJobs.length > 0) {
+    saveNotification({
+      id: generateId(),
+      type: 'job_expiring',
+      title: 'Jobs expiring soon!',
+      body: `${expiringJobs.length} job${expiringJobs.length > 1 ? 's have' : ' has'} been open for 3+ days - apply now!`,
+      jobId: expiringJobs[0].id,
+      read: false,
+      createdAt: now.toISOString()
+    })
+  }
 }
 
 // Demo seed data for MVP

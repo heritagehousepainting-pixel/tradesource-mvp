@@ -2,16 +2,36 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, logout, User } from '@/lib/store'
+import { getCurrentUser, logout, User, getNotifications, markAllNotificationsRead, getUnreadNotificationCount, updateLastVisit, getActivitySummary, checkAndGenerateNotifications, Notification } from '@/lib/store'
 
 export default function Home() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [activity, setActivity] = useState({ newJobsToday: 0, newJobsLastHour: 0, activeContractors: 0, expiringJobs: 0 })
 
   useEffect(() => {
     const currentUser = getCurrentUser()
     setUser(currentUser)
+    
+    // Update last visit for habit tracking
+    updateLastVisit()
+    
+    // Check for new notifications if user is logged in
+    if (currentUser && currentUser.status === 'approved') {
+      checkAndGenerateNotifications(currentUser.id)
+    }
+    
+    // Load activity summary
+    setActivity(getActivitySummary())
+    
+    // Load notifications
+    setNotifications(getNotifications())
+    setUnreadCount(getUnreadNotificationCount())
+    
     setLoading(false)
   }, [])
 
@@ -19,6 +39,22 @@ export default function Home() {
     logout()
     setUser(null)
   }
+
+  const handleMarkAllRead = () => {
+    markAllNotificationsRead()
+    setNotifications(getNotifications())
+    setUnreadCount(0)
+  }
+
+  // Get time-based greeting for habit hooks
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return { title: 'Good morning!', subtitle: 'Start your day with new opportunities' }
+    if (hour < 17) return { title: 'Good afternoon!', subtitle: 'Check out the latest jobs' }
+    return { title: 'Good evening!', subtitle: 'Wrap up your day - any updates?' }
+  }
+
+  const greeting = getTimeBasedGreeting()
 
   if (loading) {
     return (
@@ -35,15 +71,66 @@ export default function Home() {
         <div className="max-w-md mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-900">TradeSource</h1>
           {user && (
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-600"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Notification Bell */}
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 text-gray-600 hover:text-gray-900 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-gray-600"
+              >
+                Sign Out
+              </button>
+            </div>
           )}
         </div>
       </header>
+
+      {/* Notification Dropdown */}
+      {showNotifications && user && (
+        <div className="bg-white border-b border-gray-200 shadow-lg">
+          <div className="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <h3 className="font-semibold text-gray-900">Notifications</h3>
+            {unreadCount > 0 && (
+              <button 
+                onClick={handleMarkAllRead}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+          <div className="max-w-md mx-auto px-4 pb-4 max-h-64 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="text-sm text-gray-500 py-4 text-center">No notifications yet</p>
+            ) : (
+              notifications.slice(0, 5).map(notif => (
+                <div 
+                  key={notif.id}
+                  className={`py-3 border-b border-gray-100 last:border-0 ${!notif.read ? 'bg-blue-50 -mx-4 px-4' : ''}`}
+                >
+                  <p className="font-medium text-sm text-gray-900">{notif.title}</p>
+                  <p className="text-sm text-gray-600">{notif.body}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-md mx-auto px-4 py-8">
         {!user ? (
@@ -122,8 +209,70 @@ export default function Home() {
             <p className="text-sm text-gray-500">Contact support for more information.</p>
           </div>
         ) : (
-          // Approved user - show main actions
+          // Approved user - show main actions with habit-forming features
           <div className="space-y-6">
+            {/* Habit Hook - Time-based greeting */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 text-white">
+              <p className="font-semibold text-lg">{greeting.title}</p>
+              <p className="text-blue-100 text-sm">{greeting.subtitle}</p>
+            </div>
+
+            {/* Activity Indicators - Key habit driver */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Live Activity
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {/* New jobs today */}
+                <button 
+                  onClick={() => router.push('/jobs')}
+                  className="p-3 bg-green-50 rounded-lg text-left hover:bg-green-100 transition"
+                >
+                  <p className="text-2xl font-bold text-green-600">{activity.newJobsToday}</p>
+                  <p className="text-xs text-green-700">new jobs today</p>
+                </button>
+                
+                {/* Jobs posted in last hour - urgency */}
+                {activity.newJobsLastHour > 0 && (
+                  <button 
+                    onClick={() => router.push('/jobs')}
+                    className="p-3 bg-red-50 rounded-lg text-left hover:bg-red-100 transition animate-pulse"
+                  >
+                    <p className="text-2xl font-bold text-red-600">{activity.newJobsLastHour}</p>
+                    <p className="text-xs text-red-700">posted in last hour!</p>
+                  </button>
+                )}
+                
+                {/* Active contractors */}
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">{activity.activeContractors}</p>
+                  <p className="text-xs text-blue-700">painters active</p>
+                </div>
+                
+                {/* Expiring jobs - urgency */}
+                {activity.expiringJobs > 0 && (
+                  <button 
+                    onClick={() => router.push('/jobs')}
+                    className="p-3 bg-orange-50 rounded-lg text-left hover:bg-orange-100 transition"
+                  >
+                    <p className="text-2xl font-bold text-orange-600">{activity.expiringJobs}</p>
+                    <p className="text-xs text-orange-700">expiring soon</p>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions on Return */}
+            {unreadCount > 0 && (
+              <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
+                <h3 className="font-semibold text-gray-900 mb-2">Welcome back! 👋</h3>
+                <p className="text-sm text-gray-600">
+                  You have <span className="font-semibold text-blue-600">{unreadCount} new notification{unreadCount > 1 ? 's' : ''}</span> to catch up on.
+                </p>
+              </div>
+            )}
+
             {/* User info */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-3">
