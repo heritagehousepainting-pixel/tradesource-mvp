@@ -47,19 +47,29 @@ export default function Home() {
 
       <main className="max-w-md mx-auto px-4 py-8">
         {!user ? (
-          // Not logged in - show login/apply options
+          // Not logged in - show clear value proposition
           <div className="space-y-6">
+            {/* Hero section - passes 5-second clarity test */}
             <div className="text-center mb-8">
-              <p className="text-gray-600">
-                Private network of vetted painters in Montgomery County, PA
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                Need painters? Get help in minutes.
+              </h2>
+              <p className="text-gray-600 mb-4">
+                When your crew doesn't show or you've got more work than you can handle — tap into a network of trusted, vetted painters in Montgomery County.
               </p>
+              <div className="flex flex-wrap justify-center gap-2 text-sm">
+                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full">🚀 Need help fast?</span>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">📋 Too much work?</span>
+                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full">💼 Looking for work?</span>
+              </div>
             </div>
 
+            {/* Primary action: Contractors who need painters */}
             <button
               onClick={() => router.push('/apply')}
-              className="w-full py-4 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition"
+              className="w-full py-5 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition"
             >
-              Join the Network
+              I Need Painters — Get Help Now
             </button>
 
             <div className="relative">
@@ -71,16 +81,37 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Secondary action: Painters looking for work */}
+            <button
+              onClick={() => router.push('/apply')}
+              className="w-full py-5 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
+            >
+              I'm a Painter — Find Work
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-gray-50 text-gray-500">already a member?</span>
+              </div>
+            </div>
+
             <button
               onClick={() => router.push('/login')}
-              className="w-full py-4 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
+              className="w-full py-3 px-6 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition"
             >
               Sign In
             </button>
 
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Already a member? Sign in to access jobs
-            </p>
+            {/* Trust indicators */}
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 pt-4">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Every painter is vetted and verified</span>
+            </div>
           </div>
         ) : user.status === 'pending' ? (
           // Pending approval
