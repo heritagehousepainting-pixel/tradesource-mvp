@@ -89,11 +89,11 @@ export default function Home() {
   const getContainerClass = () => {
     switch (surface) {
       case 'desktop':
-        return 'max-w-full mx-auto px-6 py-8'
+        return 'w-full px-6 py-8'
       case 'tablet':
-        return 'max-w-4xl mx-auto px-6 py-8'
+        return 'w-full px-6 py-8'
       default:
-        return 'max-w-md mx-auto px-4 py-8'
+        return 'w-full px-4 py-8'
     }
   }
 
@@ -101,11 +101,11 @@ export default function Home() {
   const getHeaderContainerClass = () => {
     switch (surface) {
       case 'desktop':
-        return 'max-w-full mx-auto px-6'
+        return 'w-full px-6'
       case 'tablet':
-        return 'max-w-4xl mx-auto px-6'
+        return 'w-full px-6'
       default:
-        return 'max-w-md mx-auto px-4'
+        return 'w-full px-4'
     }
   }
 
@@ -113,11 +113,11 @@ export default function Home() {
   const getNotificationContainerClass = () => {
     switch (surface) {
       case 'desktop':
-        return 'max-w-full mx-auto px-6'
+        return 'w-full px-6'
       case 'tablet':
-        return 'max-w-4xl mx-auto px-6'
+        return 'w-full px-6'
       default:
-        return 'max-w-md mx-auto px-4'
+        return 'w-full px-4'
     }
   }
 

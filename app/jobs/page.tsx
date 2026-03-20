@@ -56,22 +56,22 @@ export default function JobsPage() {
   const getContainerClass = () => {
     switch (surface) {
       case 'desktop':
-        return 'max-w-6xl mx-auto px-6 py-6'
+        return 'w-full px-6 py-6'
       case 'tablet':
-        return 'max-w-4xl mx-auto px-6 py-6'
+        return 'w-full px-6 py-6'
       default:
-        return 'max-w-md mx-auto px-4 py-4'
+        return 'w-full px-4 py-4'
     }
   }
 
   const getHeaderContainerClass = () => {
     switch (surface) {
       case 'desktop':
-        return 'max-w-6xl mx-auto px-6'
+        return 'w-full px-6'
       case 'tablet':
-        return 'max-w-4xl mx-auto px-6'
+        return 'w-full px-6'
       default:
-        return 'max-w-md mx-auto px-4'
+        return 'w-full px-4'
     }
   }
 
