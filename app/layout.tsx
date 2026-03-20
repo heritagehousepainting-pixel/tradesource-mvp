@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TradeSource - Montgomery County Painting Network',
-  description: 'Verified painters network for Montgomery County, PA. Connect with trusted painting contractors.',
+  title: 'TradeSource - Montgomery County Painters Network',
+  description: 'Private, vetted network of painters in Montgomery County, PA who share work based on capacity.',
 }
 
 export default function RootLayout({
@@ -12,24 +12,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                if (localStorage.getItem('theme') === 'dark' || 
-                    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-screen bg-white dark:bg-gray-900">{children}</body>
+    <html lang="en">
+      <body className="min-h-screen bg-gray-50">{children}</body>
     </html>
   )
 }

@@ -1,189 +1,136 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase'
+import { getCurrentUser, setCurrentUser, getUserByEmail, User } from '@/lib/store'
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [formErrors, setFormErrors] = useState<{email?: string; password?: string}>({})
 
-  const validateForm = (): boolean => {
-    const errors: {email?: string; password?: string} = {}
-    
-    if (!email.trim()) {
-      errors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Please enter a valid email'
+  useEffect(() => {
+    const user = getCurrentUser()
+    if (user) {
+      router.push('/')
     }
-    if (!password.trim()) {
-      errors.password = 'Password is required'
-    }
-    
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+  }, [router])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
-    // Validate form before submitting
-    if (!validateForm()) {
-      return
-    }
-    
     setLoading(true)
 
     try {
-      // Check if Supabase is properly configured
-      if (isSupabaseConfigured()) {
-        const supabase = getSupabaseBrowserClient()
-        
-        const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-
-        if (supabaseError) {
-          setError('Invalid email or password')
-          setLoading(false)
-          return
-        }
-
-        if (data.user) {
-          // Check if contractor is approved in the database
-          const { data: contractor } = await supabase
-            .from('contractors')
-            .select('status, email')
-            .eq('email', email)
-            .single()
-
-          if (contractor && contractor.status === 'approved') {
-            router.push('/dashboard')
-          } else {
-            // Check applications
-            const { data: app } = await supabase
-              .from('contractor_applications')
-              .select('status')
-              .eq('email', email)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single()
-
-            if (app && app.status === 'approved') {
-              router.push('/dashboard')
-            } else {
-              await supabase.auth.signOut()
-              setError('Your account is not yet approved')
-            }
-          }
-          setLoading(false)
-          return
-        }
-      }
-
-      // Fallback: Check localStorage for approved contractors (MVP demo)
-      const approvedContractors = JSON.parse(localStorage.getItem('approved_contractors') || '[]')
-      const contractor = approvedContractors.find((c: any) => c.email === email && c.status === 'approved')
+      // Simple lookup by email - in production would use proper auth
+      const user = getUserByEmail(email)
       
-      if (contractor) {
-        // Store fake auth session in sessionStorage
-        sessionStorage.setItem('tradesource_user', JSON.stringify({
-          email: contractor.email,
-          name: contractor.name,
-          company: contractor.company
-        }))
-        router.push('/dashboard')
-        return
+      if (!user) {
+        // For demo: create a test approved user
+        const testUser: User = {
+          id: 'demo-' + Date.now(),
+          fullName: 'Demo Painter',
+          businessName: 'Demo Painting Co',
+          email: email,
+          phone: '(215) 555-0100',
+          licenseNumber: 'PA12345',
+          yearsExperience: 5,
+          reviewLink: 'https://example.com/reviews',
+          w9Data: null,
+          insuranceData: null,
+          status: 'approved',
+          createdAt: new Date().toISOString()
+        }
+        // Save and login
+        // For MVP demo, just set current user
       }
 
-      setError('Invalid email or password')
+      if (user) {
+        setCurrentUser(user)
+        if (user.status === 'pending') {
+          router.push('/pending')
+        } else if (user.status === 'rejected') {
+          setError('Your account has been rejected. Contact support.')
+        } else {
+          router.push('/')
+        }
+      } else {
+        // Demo mode: create temp user
+        const demoUser: User = {
+          id: 'demo-' + Date.now(),
+          fullName: 'Demo User',
+          businessName: 'Demo Painting',
+          email: email,
+          phone: '(215) 555-0100',
+          licenseNumber: 'PA00000',
+          yearsExperience: 3,
+          reviewLink: 'https://example.com',
+          w9Data: null,
+          insuranceData: null,
+          status: 'approved',
+          createdAt: new Date().toISOString()
+        }
+        setCurrentUser(demoUser)
+        router.push('/')
+      }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TS</span>
-            </div>
-            <span className="font-bold text-xl text-gray-900">TradeSource</span>
-          </a>
-          <a href="/" className="text-sm text-gray-600 hover:text-primary">
-            ← Back to Home
-          </a>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center">
+          <button onClick={() => router.push('/')} className="icon-btn -ml-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-gray-900 ml-2">Sign In</h1>
         </div>
-      </nav>
+      </header>
 
-      <div className="pt-32 px-4">
-        <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
-              <p className="text-gray-600 mt-2">Access your TradeSource dashboard</p>
+      <main className="max-w-md mx-auto px-4 py-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <p className="text-gray-600 mb-6">
+            Enter your email to access your TradeSource account.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="you@example.com"
+                required
+              />
             </div>
-            
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  autoComplete="username"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setFormErrors(prev => ({ ...prev, email: '' })); }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
-                  placeholder="you@company.com"
-                />
-                {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setFormErrors(prev => ({ ...prev, password: '' })); }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.password ? 'border-red-500' : 'border-gray-300'}`}
-                  placeholder="••••••••"
-                />
-                {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
 
-            <p className="mt-6 text-center text-sm text-gray-600">
-              Not yet approved?{' '}
-              <a href="/#join" className="text-primary hover:underline">
-                Apply here
-              </a>
-            </p>
-          </div>
+            {error && (
+              <p className="text-red-600 text-sm">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 px-6 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <p className="text-sm text-gray-500 text-center mt-4">
+            New here? <button onClick={() => router.push('/apply')} className="text-gray-900 font-medium">Apply now</button>
+          </p>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

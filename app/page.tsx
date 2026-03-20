@@ -1,582 +1,164 @@
 'use client'
 
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
-
-// Blog posts data
-const blogPosts = [
-  {
-    slug: 'why-verify-your-painting-business',
-    title: 'Why Verify Your Painting Business in Montgomery County',
-    excerpt: 'Learn how verification builds trust and gets you more quality leads in your local area.',
-    date: '2026-03-15',
-    category: 'Business Tips'
-  },
-  {
-    slug: 'ai-pricing-guide-2026',
-    title: 'AI Pricing Estimates: What Homeowners Need to Know',
-    excerpt: 'Understanding how our AI pricing tool helps both homeowners and contractors.',
-    date: '2026-03-10',
-    category: 'Technology'
-  },
-  {
-    slug: 'montgomery-county-paint-trends',
-    title: 'Interior Paint Trends in Montgomery County for 2026',
-    excerpt: 'Popular colors and finishes trending in homes across the Main Line and surrounding areas.',
-    date: '2026-03-05',
-    category: 'Design'
-  }
-]
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { getCurrentUser, logout, User } from '@/lib/store'
 
 export default function Home() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    phone: '',
-    license_number: '',
-    external_reviews: ''
-  })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [w9File, setW9File] = useState<File | null>(null)
-  const [insuranceFile, setInsuranceFile] = useState<File | null>(null)
-  const [formStatus, setFormStatus] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {}
-    
-    if (!formData.name.trim()) {
-      errors.name = 'Full name is required'
-    }
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email'
-    }
-    if (!formData.company.trim()) {
-      errors.company = 'Company name is required'
-    }
-    if (!formData.license_number.trim()) {
-      errors.license_number = 'License number is required'
-    }
-    if (!formData.external_reviews.trim()) {
-      errors.external_reviews = 'Review link is required'
-    } else if (!formData.external_reviews.startsWith('http')) {
-      errors.external_reviews = 'Please enter a valid URL starting with http:// or https://'
-    }
-    if (!w9File) {
-      errors.w9File = 'W-9 document is required'
-    }
-    if (!insuranceFile) {
-      errors.insuranceFile = 'Insurance document is required'
-    }
-    
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
+  useEffect(() => {
+    const currentUser = getCurrentUser()
+    setUser(currentUser)
+    setLoading(false)
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    setUser(null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validate form before submitting
-    if (!validateForm()) {
-      // Scroll to first error
-      const firstError = document.querySelector('.form-error')
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-      return
-    }
-    
-    setIsSubmitting(true)
-    
-    // Store files as base64 in localStorage (MVP approach)
-    let w9Data: string | null = null
-    let insuranceData: string | null = null
-    
-    try {
-      if (w9File) {
-        w9Data = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(w9File)
-        })
-      }
-    } catch (err) { /* fail silently */ }
-    
-    try {
-      if (insuranceFile) {
-        insuranceData = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(insuranceFile)
-        })
-      }
-    } catch (err) { /* fail silently */ }
-    
-    // Generate application ID for linking documents
-    const appId = 'app_' + Date.now()
-    
-    // Store documents in localStorage with app ID
-    if (w9Data || insuranceData) {
-      const docs = JSON.parse(localStorage.getItem('contractor_docs') || '{}')
-      docs[appId] = {
-        w9: w9Data,
-        insurance: insuranceData,
-        w9Name: w9File?.name || 'W-9.pdf',
-        insuranceName: insuranceFile?.name || 'Insurance.pdf',
-        created_at: new Date().toISOString()
-      }
-      localStorage.setItem('contractor_docs', JSON.stringify(docs))
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('contractor_applications')
-        .insert({
-          id: appId,
-          name: formData.name,
-          email: formData.email,
-          company: formData.company,
-          phone: formData.phone || null,
-          license_number: formData.license_number || null,
-          external_reviews: formData.external_reviews || null,
-          status: 'pending_review',
-        })
-      
-      if (error) {
-        // Fallback: store in localStorage if Supabase fails
-        const apps = JSON.parse(localStorage.getItem('contractor_applications') || '[]')
-        apps.push({
-          id: appId,
-          ...formData,
-          status: 'pending_review',
-          created_at: new Date().toISOString()
-        })
-        localStorage.setItem('contractor_applications', JSON.stringify(apps))
-        alert('Success! Application submitted (saved locally). We will verify your info and contact you within 48 hours.')
-        setFormData({ name: '', email: '', company: '', phone: '', license_number: '', external_reviews: '' })
-        setW9File(null)
-        setInsuranceFile(null)
-      } else {
-        alert('Success! Application submitted. We will verify your info and contact you within 48 hours.')
-        setFormData({ name: '', email: '', company: '', phone: '', license_number: '', external_reviews: '' })
-        setW9File(null)
-        setInsuranceFile(null)
-      }
-    } catch (err: any) {
-      alert('Error: ' + (err?.message || 'Unknown error'))
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner"></div>
+      </div>
+    )
   }
 
   return (
-    <main>
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TS</span>
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-md mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-gray-900">TradeSource</h1>
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-600"
+            >
+              Sign Out
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="max-w-md mx-auto px-4 py-8">
+        {!user ? (
+          // Not logged in - show login/apply options
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <p className="text-gray-600">
+                Private network of vetted painters in Montgomery County, PA
+              </p>
             </div>
-            <span className="font-bold text-xl text-gray-900">TradeSource</span>
-          </div>
-          <div className="hidden md:flex gap-8 text-sm text-gray-600">
-            <a href="#how-it-works" className="hover:text-primary">How It Works</a>
-            <a href="#benefits" className="hover:text-primary">Benefits</a>
-            <a href="#blog" className="hover:text-primary">Blog</a>
-            <a href="#join" className="hover:text-primary">Join Network</a>
-          </div>
-          <div className="flex gap-2">
-            <a href="/login" className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-primary">
+
+            <button
+              onClick={() => router.push('/apply')}
+              className="w-full py-4 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition"
+            >
+              Join the Network
+            </button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-gray-50 text-gray-500">or</span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push('/login')}
+              className="w-full py-4 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
+            >
               Sign In
-            </a>
-            <a href="#join" className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-              Get Started
-            </a>
-            <a href="/homeowner" className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
-              For Homeowners
-            </a>
-          </div>
-        </div>
-      </nav>
+            </button>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 bg-gradient-to-b from-blue-50 to-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block bg-blue-100 text-primary px-4 py-1 rounded-full text-sm font-medium mb-6">
-            Montgomery County, PA Only
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            The Verified Painting<br />Network
-          </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-            Connect with trusted, verified painting professionals in Montgomery County. 
-            Contractors fill overflow jobs; homeowners get instant AI pricing.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#join" className="bg-primary text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-blue-700">
-              Join Verified Network
-            </a>
-            <a href="/about" className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-50">
-              Learn More
-            </a>
-          </div>
-          <p className="mt-6 text-sm text-gray-500">
-            Currently serving: Ambler, Blue Bell, Bryn Mawr, Conshohocken, Fort Washington, Gladwyne, Horsham, King of Prussia, Lansdale, Lower Gwynedd, Maple Glen, North Wales, Plymouth Meeting, Spring House, Willow Grove, & more.
-          </p>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">How It Works</h2>
-          
-          <div className="grid md:grid-cols-3 gap-12">
-            {/* For Contractors */}
-            <div className="bg-blue-50 rounded-2xl p-8">
-              <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">For Contractors</h3>
-              <ul className="space-y-3 text-gray-600">
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Post overflow painting jobs
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Set fixed rates for services
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Review interested painters
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Connect directly with matches
-                </li>
-              </ul>
-            </div>
-
-            {/* For Homeowners */}
-            <div className="bg-green-50 rounded-2xl p-8">
-              <div className="w-12 h-12 bg-secondary rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">For Homeowners</h3>
-              <ul className="space-y-3 text-gray-600">
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Post painting jobs for free
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Get AI instant pricing estimate
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  See interested verified painters
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Choose with confidence
-                </li>
-              </ul>
-            </div>
-
-            {/* Verification */}
-            <div className="bg-purple-50 rounded-2xl p-8">
-              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Verification</h3>
-              <ul className="space-y-3 text-gray-600">
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Business license verified
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Insurance coverage confirmed
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  References checked
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-secondary">✓</span>
-                  Background screened
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section id="benefits" className="py-20 px-4 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">Why TradeSource?</h2>
-          <p className="text-gray-600 text-center mb-16 max-w-2xl mx-auto">
-            Built specifically for Montgomery County painting professionals and homeowners.
-          </p>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">Local Only</div>
-              <p className="text-gray-600">Verified contractors in Montgomery County means faster response times</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">Fixed Rates</div>
-              <p className="text-gray-600">Contractors set prices upfront—no haggling or surprises</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">AI Pricing</div>
-              <p className="text-gray-600">Instant estimates help homeowners budget and contractors win jobs</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">100% Free</div>
-              <p className="text-gray-600">Homeowners post and connect at no cost</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Blog Section */}
-      <section id="blog" className="py-20 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">Latest from Our Blog</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {blogPosts.map((post) => (
-              <article key={post.slug} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center">
-                  <svg className="w-16 h-16 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                  </svg>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                    <span className="bg-gray-100 px-2 py-1 rounded">{post.category}</span>
-                    <span>{post.date}</span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{post.title}</h3>
-                  <p className="text-gray-600 text-sm line-clamp-2">{post.excerpt}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Join Section - Contractor Sign Up */}
-      <section id="join" className="py-20 px-4 bg-gray-900">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Join the Verified Network</h2>
-            <p className="text-gray-400">
-              Apply to become a verified painting contractor in Montgomery County
+            <p className="text-center text-sm text-gray-500 mt-6">
+              Already a member? Sign in to access jobs
             </p>
           </div>
-
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8">
-            {formStatus ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        ) : user.status === 'pending' ? (
+          // Pending approval
+          (router.push('/pending'), null)
+        ) : user.status === 'rejected' ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">Your application was not approved.</p>
+            <p className="text-sm text-gray-500">Contact support for more information.</p>
+          </div>
+        ) : (
+          // Approved user - show main actions
+          <div className="space-y-6">
+            {/* User info */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold">
+                  {user.fullName.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{user.fullName}</p>
+                  <p className="text-sm text-gray-500">{user.businessName}</p>
+                </div>
+                <span className="trust-badge ml-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                </div>
-                <p className="text-green-600 font-medium">{formStatus}</p>
+                  Verified
+                </span>
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors(prev => ({ ...prev, name: '' })); }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="John Smith"
-                  />
-                  {formErrors.name && <p className="text-red-500 text-sm mt-1 form-error">{formErrors.name}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    required
-                    autoComplete="username"
-                    value={formData.email}
-                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors(prev => ({ ...prev, email: '' })); }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="john@company.com"
-                  />
-                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.company}
-                    onChange={(e) => { setFormData({ ...formData, company: e.target.value }); setFormErrors(prev => ({ ...prev, company: '' })); }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.company ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Smith Painting LLC"
-                  />
-                  {formErrors.company && <p className="text-red-500 text-sm mt-1">{formErrors.company}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="(215) 555-0123"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload W-9 *</label>
-                  <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                    w9File ? 'border-green-500 bg-green-50' : (formErrors.w9File ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-blue-400')
-                  }`}>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      required
-                      onChange={(e) => { setW9File(e.target.files?.[0] || null); setFormErrors(prev => ({ ...prev, w9File: '' })); }}
-                      className="hidden"
-                      id="w9-upload"
-                    />
-                    {w9File ? (
-                      <label htmlFor="w9-upload" className="cursor-pointer">
-                        <div className="flex items-center justify-center gap-2">
-                          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-green-700 font-medium">{w9File.name}</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Click to change</p>
-                      </label>
-                    ) : (
-                      <label htmlFor="w9-upload" className="cursor-pointer">
-                        <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p className="text-gray-600">Click to upload W-9</p>
-                        <p className="text-sm text-gray-400">PDF or image</p>
-                      </label>
-                    )}
-                  </div>
-                  {formErrors.w9File && <p className="text-red-500 text-sm mt-1">{formErrors.w9File}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Insurance *</label>
-                  <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                    insuranceFile ? 'border-green-500 bg-green-50' : (formErrors.insuranceFile ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-blue-400')
-                  }`}>
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      required
-                      onChange={(e) => { setInsuranceFile(e.target.files?.[0] || null); setFormErrors(prev => ({ ...prev, insuranceFile: '' })); }}
-                      className="hidden"
-                      id="insurance-upload"
-                    />
-                    {insuranceFile ? (
-                      <label htmlFor="insurance-upload" className="cursor-pointer">
-                        <div className="flex items-center justify-center gap-2">
-                          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-green-700 font-medium">{insuranceFile.name}</span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Click to change</p>
-                      </label>
-                    ) : (
-                      <label htmlFor="insurance-upload" className="cursor-pointer">
-                        <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p className="text-gray-600">Click to upload Insurance</p>
-                        <p className="text-sm text-gray-400">PDF or image</p>
-                      </label>
-                    )}
-                  </div>
-                  {formErrors.insuranceFile && <p className="text-red-500 text-sm mt-1">{formErrors.insuranceFile}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business License Number *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.license_number}
-                    onChange={(e) => { setFormData({ ...formData, license_number: e.target.value }); setFormErrors(prev => ({ ...prev, license_number: '' })); }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.license_number ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="License #"
-                  />
-                  {formErrors.license_number && <p className="text-red-500 text-sm mt-1">{formErrors.license_number}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">External Review Link *</label>
-                  <input
-                    type="url"
-                    required
-                    value={formData.external_reviews}
-                    onChange={(e) => { setFormData({ ...formData, external_reviews: e.target.value }); setFormErrors(prev => ({ ...prev, external_reviews: '' })); }}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${formErrors.external_reviews ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="https://google.com/maps/..."
-                  />
-                  {formErrors.external_reviews && <p className="text-red-500 text-sm mt-1">{formErrors.external_reviews}</p>}
-                </div>
-                
-                <div className="md:col-span-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-primary text-white py-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </form>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-800 py-12 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">TS</span>
             </div>
-            <span className="font-bold text-xl text-white">TradeSource</span>
+
+            {/* Main actions */}
+            <div className="grid gap-4">
+              <button
+                onClick={() => router.push('/post-job')}
+                className="w-full py-6 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition flex items-center justify-center gap-3"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                POST A JOB
+              </button>
+
+              <button
+                onClick={() => router.push('/jobs')}
+                className="w-full py-6 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition flex items-center justify-center gap-3"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                FIND WORK
+              </button>
+            </div>
+
+            {/* Quick links */}
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              <button
+                onClick={() => router.push('/profile')}
+                className="py-3 px-4 bg-white border border-gray-200 rounded-xl text-center hover:bg-gray-50 transition"
+              >
+                <svg className="w-5 h-5 mx-auto mb-1 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-sm text-gray-600">Profile</span>
+              </button>
+              <button
+                onClick={() => router.push('/jobs')}
+                className="py-3 px-4 bg-white border border-gray-200 rounded-xl text-center hover:bg-gray-50 transition"
+              >
+                <svg className="w-5 h-5 mx-auto mb-1 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span className="text-sm text-gray-600">My Jobs</span>
+              </button>
+            </div>
           </div>
-          <div className="text-gray-400 text-sm">
-            © 2026 TradeSource. Montgomery County, PA.
-          </div>
-          <div className="flex gap-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-white">Privacy</a>
-            <a href="#" className="hover:text-white">Terms</a>
-            <a href="#" className="hover:text-white">Contact</a>
-          </div>
-        </div>
-      </footer>
-    </main>
+        )}
+      </main>
+    </div>
   )
 }
