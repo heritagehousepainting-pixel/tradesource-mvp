@@ -4,8 +4,33 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser, saveJob, Job, User, generateId } from '@/lib/store'
 
+// Surface detection hook for responsive layout
+function useSurface() {
+  const [surface, setSurface] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+
+  useEffect(() => {
+    const updateSurface = () => {
+      const width = window.innerWidth
+      if (width >= 1024) {
+        setSurface('desktop')
+      } else if (width >= 768) {
+        setSurface('tablet')
+      } else {
+        setSurface('mobile')
+      }
+    }
+
+    updateSurface()
+    window.addEventListener('resize', updateSurface)
+    return () => window.removeEventListener('resize', updateSurface)
+  }, [])
+
+  return surface
+}
+
 export default function PostJobPage() {
   const router = useRouter()
+  const surface = useSurface()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,6 +59,29 @@ export default function PostJobPage() {
 
     setLoading(false)
   }, [router])
+
+  // Responsive container classes
+  const getContainerClass = () => {
+    switch (surface) {
+      case 'desktop':
+        return 'max-w-2xl mx-auto px-6 py-6'
+      case 'tablet':
+        return 'max-w-2xl mx-auto px-6 py-6'
+      default:
+        return 'max-w-md mx-auto px-4 py-6'
+    }
+  }
+
+  const getHeaderContainerClass = () => {
+    switch (surface) {
+      case 'desktop':
+        return 'max-w-2xl mx-auto px-6'
+      case 'tablet':
+        return 'max-w-2xl mx-auto px-6'
+      default:
+        return 'max-w-md mx-auto px-4'
+    }
+  }
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -91,17 +139,19 @@ export default function PostJobPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center">
-          <button onClick={() => router.push('/')} className="icon-btn -ml-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-900 ml-2">Post a Job</h1>
+        <div className={getHeaderContainerClass()}>
+          <div className="py-4 flex items-center">
+            <button onClick={() => router.push('/')} className="icon-btn -ml-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold text-gray-900 ml-2">Post a Job</h1>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6">
+      <main className={getContainerClass()}>
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <p className="text-gray-600 mb-6">
             Need help? Post a job and let other painters know you're available.

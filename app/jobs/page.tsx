@@ -4,8 +4,33 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser, getOpenJobs, Job, User } from '@/lib/store'
 
+// Surface detection hook for responsive layout
+function useSurface() {
+  const [surface, setSurface] = useState<'mobile' | 'tablet' | 'desktop'>('desktop')
+
+  useEffect(() => {
+    const updateSurface = () => {
+      const width = window.innerWidth
+      if (width >= 1024) {
+        setSurface('desktop')
+      } else if (width >= 768) {
+        setSurface('tablet')
+      } else {
+        setSurface('mobile')
+      }
+    }
+
+    updateSurface()
+    window.addEventListener('resize', updateSurface)
+    return () => window.removeEventListener('resize', updateSurface)
+  }, [])
+
+  return surface
+}
+
 export default function JobsPage() {
   const router = useRouter()
+  const surface = useSurface()
   const [user, setUser] = useState<User | null>(null)
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,6 +51,40 @@ export default function JobsPage() {
     setJobs(getOpenJobs())
     setLoading(false)
   }, [router])
+
+  // Responsive container classes
+  const getContainerClass = () => {
+    switch (surface) {
+      case 'desktop':
+        return 'max-w-6xl mx-auto px-6 py-6'
+      case 'tablet':
+        return 'max-w-4xl mx-auto px-6 py-6'
+      default:
+        return 'max-w-md mx-auto px-4 py-4'
+    }
+  }
+
+  const getHeaderContainerClass = () => {
+    switch (surface) {
+      case 'desktop':
+        return 'max-w-6xl mx-auto px-6'
+      case 'tablet':
+        return 'max-w-4xl mx-auto px-6'
+      default:
+        return 'max-w-md mx-auto px-4'
+    }
+  }
+
+  const getGridClass = () => {
+    switch (surface) {
+      case 'desktop':
+        return 'grid grid-cols-3 gap-4'
+      case 'tablet':
+        return 'grid grid-cols-2 gap-4'
+      default:
+        return 'space-y-4'
+    }
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -83,18 +142,20 @@ export default function JobsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => router.push('/')} className="icon-btn -ml-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">Find Work</h1>
-          <div className="w-10"></div>
+        <div className={getHeaderContainerClass()}>
+          <div className="py-4 flex items-center justify-between">
+            <button onClick={() => router.push('/')} className="icon-btn -ml-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">Find Work</h1>
+            <div className="w-10"></div>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-4">
+      <main className={getContainerClass()}>
         {jobs.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -112,7 +173,7 @@ export default function JobsPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className={getGridClass()}>
             {jobs.map(job => {
               const urgency = getUrgencyMessage(job.createdAt)
               const urgent = isJobUrgent(job.createdAt)
