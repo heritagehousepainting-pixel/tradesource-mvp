@@ -144,3 +144,125 @@ export function setCurrentUser(user: User | null): void {
 export function logout(): void {
   localStorage.removeItem(STORAGE_KEYS.CURRENT_USER)
 }
+
+// Demo seed data for MVP
+const SEED_JOBS: Job[] = [
+  {
+    id: 'demo-job-1',
+    posterId: 'demo-user-1',
+    posterName: 'Mike Thompson',
+    posterBusiness: 'Thompson Painting LLC',
+    title: 'Interior Painting - 3 Bedroom Ranch',
+    description: 'Looking for an experienced painter to paint the interior of our 3 bedroom ranch home in King of Prussia. Walls are in good condition, just needs fresh paint. Owner will move furniture. Prefer white or off-white finish.',
+    price: 1800,
+    location: 'King of Prussia, PA',
+    timing: 'This week - Flexible',
+    status: 'open',
+    interested: ['demo-user-2', 'demo-user-3'],
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+  },
+  {
+    id: 'demo-job-2',
+    posterId: 'demo-user-2',
+    posterName: 'Sarah Williams',
+    posterBusiness: 'Williams Home Services',
+    title: 'Exterior Trim Paint - Colonial Home',
+    description: 'Need to repaint the exterior trim on my 2-story colonial in Ardmore. Approximately 200 linear feet of trim, plus fascia boards. Wood is in good shape, just peeling paint. Would like it done in white.',
+    price: 1200,
+    location: 'Ardmore, PA',
+    timing: 'Next 2 weeks',
+    status: 'open',
+    interested: ['demo-user-1'],
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+  },
+  {
+    id: 'demo-job-3',
+    posterId: 'demo-user-3',
+    posterName: 'Robert Chen',
+    posterBusiness: 'Chen Renovations',
+    title: 'Kitchen Cabinet Refinishing',
+    description: 'Seeking painter to refinish 15 upper and lower kitchen cabinets in a Bryn Mawr home. Current finish is dark stain, want to go to a light gray. Will need to sand, prime, and paint. Quality work required.',
+    price: 2200,
+    location: 'Bryn Mawr, PA',
+    timing: 'Flexible - Next month',
+    status: 'open',
+    interested: [],
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+  },
+  {
+    id: 'demo-job-4',
+    posterId: 'demo-user-1',
+    posterName: 'Mike Thompson',
+    posterBusiness: 'Thompson Painting LLC',
+    title: 'Master Bedroom Accent Wall',
+    description: 'Need an accent wall painted in master bedroom. Approximately 14ft wide by 9ft tall. Want a deep navy blue color. Wall has one window and a door. Quick job, half day work.',
+    price: 350,
+    location: 'King of Prussia, PA',
+    timing: 'This weekend',
+    status: 'open',
+    interested: ['demo-user-2'],
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() // 5 hours ago
+  }
+]
+
+const SEED_USERS: User[] = [
+  {
+    id: 'demo-user-1',
+    fullName: 'Mike Thompson',
+    businessName: 'Thompson Painting LLC',
+    email: 'mike@thompsonpainting.com',
+    phone: '(610) 555-0101',
+    licenseNumber: 'PA123456',
+    yearsExperience: 12,
+    reviewLink: 'https://www.google.com/reviews/example1',
+    w9Data: null,
+    insuranceData: null,
+    status: 'approved',
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'demo-user-2',
+    fullName: 'Sarah Williams',
+    businessName: 'Williams Home Services',
+    email: 'sarah@williamshome.com',
+    phone: '(610) 555-0102',
+    licenseNumber: 'PA234567',
+    yearsExperience: 8,
+    reviewLink: 'https://www.google.com/reviews/example2',
+    w9Data: null,
+    insuranceData: null,
+    status: 'approved',
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'demo-user-3',
+    fullName: 'Robert Chen',
+    businessName: 'Chen Renovations',
+    email: 'robert@chenrenovations.com',
+    phone: '(610) 555-0103',
+    licenseNumber: 'PA345678',
+    yearsExperience: 15,
+    reviewLink: 'https://www.google.com/reviews/example3',
+    w9Data: null,
+    insuranceData: null,
+    status: 'approved',
+    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+  }
+]
+
+// Initialize seed data if none exists
+export function initializeSeedData(): void {
+  if (typeof window === 'undefined') return
+  
+  const existingJobs = getJobs()
+  if (existingJobs.length === 0) {
+    // Seed demo jobs
+    SEED_JOBS.forEach(job => saveJob(job))
+  }
+  
+  const existingUsers = getUsers()
+  if (existingUsers.length === 0) {
+    // Seed demo users
+    SEED_USERS.forEach(user => saveUser(user))
+  }
+}

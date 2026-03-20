@@ -147,7 +147,7 @@ export default function Home() {
                 <span className="text-sm text-gray-600">Profile</span>
               </button>
               <button
-                onClick={() => router.push('/jobs')}
+                onClick={() => router.push('/my-jobs')}
                 className="py-3 px-4 bg-white border border-gray-200 rounded-xl text-center hover:bg-gray-50 transition"
               >
                 <svg className="w-5 h-5 mx-auto mb-1 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

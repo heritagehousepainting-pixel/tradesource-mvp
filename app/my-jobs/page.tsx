@@ -1,0 +1,160 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getCurrentUser, getJobs, Job, User } from '@/lib/store'
+
+export default function MyJobsPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const currentUser = getCurrentUser()
+    if (!currentUser) {
+      router.push('/login')
+      return
+    }
+    setUser(currentUser)
+    
+    if (currentUser.status !== 'approved') {
+      router.push('/pending')
+      return
+    }
+
+    // Get jobs posted by this user
+    const allJobs = getJobs()
+    const userJobs = allJobs.filter(j => j.posterId === currentUser.id)
+    setJobs(userJobs)
+    setLoading(false)
+  }, [router])
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(price)
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (diffHours < 1) return 'Just now'
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    return date.toLocaleDateString()
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+          <button onClick={() => router.push('/')} className="icon-btn -ml-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">My Jobs</h1>
+          <div className="w-10"></div>
+        </div>
+      </header>
+
+      <main className="max-w-md mx-auto px-4 py-4">
+        {jobs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">No Jobs Yet</h2>
+            <p className="text-gray-500 mb-6">You haven't posted any jobs yet.</p>
+            <button
+              onClick={() => router.push('/post-job')}
+              className="py-3 px-6 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition"
+            >
+              Post Your First Job
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {jobs.map(job => (
+              <button
+                key={job.id}
+                onClick={() => router.push(`/jobs/${job.id}`)}
+                className="job-card w-full text-left p-4"
+              >
+                {/* Status badge */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${
+                    job.status === 'open' ? 'bg-green-100 text-green-800' :
+                    job.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {job.status === 'open' ? 'Open' : job.status === 'assigned' ? 'Assigned' : 'Completed'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Posted {formatDate(job.createdAt)}
+                  </span>
+                </div>
+
+                {/* Job title */}
+                <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
+
+                {/* Price */}
+                <p className="text-xl font-bold text-gray-900 mb-2">
+                  {formatPrice(job.price)}
+                </p>
+
+                {/* Location & Timing */}
+                <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {job.location}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {job.timing}
+                  </span>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                    {job.interested.length} interested
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {job.status === 'open' ? 'View details →' : job.status === 'assigned' ? 'View →' : 'View →'}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

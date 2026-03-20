@@ -86,10 +86,16 @@ export default function Pending() {
             </svg>
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Under Review</h2>
-          <p className="text-gray-600 mb-8">
-            Your application is being reviewed by our team. We'll notify you once a decision has been made.
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Under Review</h2>
+          <p className="text-gray-600 mb-4">
+            Your application to join TradeSource is being reviewed by our team.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              <strong>What happens next?</strong><br/>
+              You'll receive an email within 1-2 business days with a decision on your application. Once approved, you'll be able to post jobs and find work in the network.
+            </p>
+          </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm text-left">
             <h3 className="font-semibold text-gray-900 mb-4">Application Details</h3>
@@ -114,7 +120,7 @@ export default function Pending() {
           </div>
 
           <p className="text-sm text-gray-500 mt-6">
-            This page will update automatically. Typical review time: 1-2 business days.
+            This page will update automatically. We'll email you when a decision has been made.
           </p>
         </div>
       </main>
