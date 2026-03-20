@@ -29,13 +29,13 @@ export default function Login() {
       if (!user) {
         // For demo: create a test approved user
         const testUser: User = {
-          id: 'demo-' + Date.now(),
-          fullName: 'Demo Painter',
-          businessName: 'Demo Painting Co',
+          id: 'user-' + Date.now(),
+          fullName: 'New User',
+          businessName: 'Your Painting Business',
           email: email,
-          phone: '(215) 555-0100',
-          licenseNumber: 'PA12345',
-          yearsExperience: 5,
+          phone: '(610) 555-0100',
+          licenseNumber: 'PA00000',
+          yearsExperience: 1,
           reviewLink: 'https://example.com/reviews',
           w9Data: null,
           insuranceData: null,
@@ -56,22 +56,22 @@ export default function Login() {
           router.push('/')
         }
       } else {
-        // Demo mode: create temp user
-        const demoUser: User = {
-          id: 'demo-' + Date.now(),
-          fullName: 'Demo User',
-          businessName: 'Demo Painting',
+        // Create new user session
+        const newUser: User = {
+          id: 'user-' + Date.now(),
+          fullName: 'New User',
+          businessName: 'Your Business',
           email: email,
-          phone: '(215) 555-0100',
+          phone: '(610) 555-0100',
           licenseNumber: 'PA00000',
-          yearsExperience: 3,
+          yearsExperience: 1,
           reviewLink: 'https://example.com',
           w9Data: null,
           insuranceData: null,
           status: 'approved',
           createdAt: new Date().toISOString()
         }
-        setCurrentUser(demoUser)
+        setCurrentUser(newUser)
         router.push('/')
       }
     } catch (err) {

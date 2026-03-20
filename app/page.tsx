@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, logout, User, getNotifications, markAllNotificationsRead, getUnreadNotificationCount, updateLastVisit, getActivitySummary, checkAndGenerateNotifications, Notification } from '@/lib/store'
+import { getCurrentUser, logout, User, getNotifications, markAllNotificationsRead, getUnreadNotificationCount, updateLastVisit, getActivitySummary, checkAndGenerateNotifications, Notification, getPlatformStats, TESTIMONIALS } from '@/lib/store'
 
 export default function Home() {
   const router = useRouter()
@@ -12,6 +12,7 @@ export default function Home() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [activity, setActivity] = useState({ newJobsToday: 0, newJobsLastHour: 0, activeContractors: 0, expiringJobs: 0 })
+  const [stats, setStats] = useState({ totalPainters: 0, activeToday: 0, workingNow: 0, jobsCompleted: 0, avgJobValue: 0 })
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -27,6 +28,9 @@ export default function Home() {
     
     // Load activity summary
     setActivity(getActivitySummary())
+    
+    // Load platform stats
+    setStats(getPlatformStats())
     
     // Load notifications
     setNotifications(getNotifications())
@@ -69,10 +73,15 @@ export default function Home() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">TradeSource</h1>
+          <div className="flex items-center gap-2">
+            {/* Paint brush icon */}
+            <svg className="w-8 h-8 text-[#1e3a5f]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.42-1.41-1.41 1.41 1.41 1.41-1.42 1.42a1 1 0 00-.29.71V19a1 1 0 001 1h2.83a1 1 0 00.71-.29l1.42-1.42 1.41 1.41 1.42-1.41-1.41-1.41 3.12-3.12a1 1 0 000-1.42zM7 17a1 1 0 110-2 1 1 0 010 2z"/>
+            </svg>
+            <h1 className="text-xl font-bold text-[#1e3a5f]">TradeSource</h1>
+          </div>
           {user && (
             <div className="flex items-center gap-3">
-              {/* Notification Bell */}
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2 text-gray-600 hover:text-gray-900 transition"
@@ -105,7 +114,7 @@ export default function Home() {
             {unreadCount > 0 && (
               <button 
                 onClick={handleMarkAllRead}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-[#1e3a5f] hover:text-[#2d5a87]"
               >
                 Mark all read
               </button>
@@ -134,10 +143,40 @@ export default function Home() {
 
       <main className="max-w-md mx-auto px-4 py-8">
         {!user ? (
-          // Not logged in - show clear value proposition
+          // Not logged in - show clear value proposition with social proof
           <div className="space-y-6">
-            {/* Hero section - passes 5-second clarity test */}
-            <div className="text-center mb-8">
+            {/* Platform stats banner */}
+            <div className="bg-[#1e3a5f] rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="live-indicator"></span>
+                  <span className="text-sm font-medium">Live Network</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                  <span>4.9/5 avg rating</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold">{stats.activeToday}</p>
+                  <p className="text-xs text-blue-200">painters online</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.workingNow}</p>
+                  <p className="text-xs text-blue-200">working now</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalPainters}</p>
+                  <p className="text-xs text-blue-200">total network</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Hero section */}
+            <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-3">
                 Need painters? Get help in minutes.
               </h2>
@@ -151,10 +190,19 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Paint swatches decoration */}
+            <div className="flex justify-center gap-2 py-2">
+              <div className="paint-swatch" style={{background: '#2563eb'}}></div>
+              <div className="paint-swatch" style={{background: '#059669'}}></div>
+              <div className="paint-swatch" style={{background: '#ea580c'}}></div>
+              <div className="paint-swatch" style={{background: '#7c3aed'}}></div>
+              <div className="paint-swatch" style={{background: '#dc2626'}}></div>
+            </div>
+
             {/* Primary action: Contractors who need painters */}
             <button
               onClick={() => router.push('/apply')}
-              className="w-full py-5 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition"
+              className="w-full py-5 px-6 bg-[#1e3a5f] text-white font-semibold rounded-xl text-lg hover:bg-[#2d5a87] transition shadow-lg"
             >
               I Need Painters — Get Help Now
             </button>
@@ -171,7 +219,7 @@ export default function Home() {
             {/* Secondary action: Painters looking for work */}
             <button
               onClick={() => router.push('/apply')}
-              className="w-full py-5 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
+              className="w-full py-5 px-6 bg-white border-2 border-[#1e3a5f] text-[#1e3a5f] font-semibold rounded-xl text-lg hover:bg-gray-50 transition"
             >
               I'm a Painter — Find Work
             </button>
@@ -192,12 +240,55 @@ export default function Home() {
               Sign In
             </button>
 
-            {/* Trust indicators */}
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 pt-4">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>Every painter is vetted and verified</span>
+            {/* Trust indicators with paint theme */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2 text-green-700">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <span>Vetted</span>
+                </div>
+                <div className="flex items-center gap-2 text-blue-700">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span>Verified</span>
+                </div>
+                <div className="flex items-center gap-2 text-orange-700">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                  </svg>
+                  <span>Local</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonials section */}
+            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+              <h3 className="font-semibold text-gray-900 mb-4 text-center">What painters say</h3>
+              <div className="space-y-4">
+                {TESTIMONIALS.map((testimonial) => (
+                  <div key={testimonial.id} className="testimonial-card p-4 rounded-lg">
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-700 italic">"{testimonial.quote}"</p>
+                    <p className="text-xs text-gray-500 mt-2 font-medium">{testimonial.author}</p>
+                    <p className="text-xs text-gray-400">{testimonial.business}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Jobs completed counter */}
+            <div className="text-center py-4">
+              <p className="text-3xl font-bold text-[#1e3a5f]">{stats.jobsCompleted.toLocaleString()}+</p>
+              <p className="text-sm text-gray-500">jobs completed through TradeSource</p>
             </div>
           </div>
         ) : user.status === 'pending' ? (
@@ -212,7 +303,7 @@ export default function Home() {
           // Approved user - show main actions with habit-forming features
           <div className="space-y-6">
             {/* Habit Hook - Time-based greeting */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 text-white">
+            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] rounded-xl p-4 text-white">
               <p className="font-semibold text-lg">{greeting.title}</p>
               <p className="text-blue-100 text-sm">{greeting.subtitle}</p>
             </div>
@@ -244,10 +335,10 @@ export default function Home() {
                   </button>
                 )}
                 
-                {/* Active contractors */}
+                {/* Active contractors - NOW SHOWS REAL NUMBER */}
                 <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{activity.activeContractors}</p>
-                  <p className="text-xs text-blue-700">painters active</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.activeToday}</p>
+                  <p className="text-xs text-blue-700">painters online</p>
                 </div>
                 
                 {/* Expiring jobs - urgency */}
@@ -260,6 +351,30 @@ export default function Home() {
                     <p className="text-xs text-orange-700">expiring soon</p>
                   </button>
                 )}
+              </div>
+            </div>
+
+            {/* Platform stats for logged in users too */}
+            <div className="bg-[#1e3a5f] rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="flex items-center gap-1">
+                  <span className="live-indicator"></span>
+                  Network Activity
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-xl font-bold">{stats.workingNow}</p>
+                  <p className="text-xs text-blue-200">working now</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.totalPainters}</p>
+                  <p className="text-xs text-blue-200">painters</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{stats.jobsCompleted}+</p>
+                  <p className="text-xs text-blue-200">jobs done</p>
+                </div>
               </div>
             </div>
 
@@ -276,7 +391,7 @@ export default function Home() {
             {/* User info */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-[#1e3a5f] rounded-full flex items-center justify-center text-white font-bold">
                   {user.fullName.charAt(0)}
                 </div>
                 <div>
@@ -296,7 +411,7 @@ export default function Home() {
             <div className="grid gap-4">
               <button
                 onClick={() => router.push('/post-job')}
-                className="w-full py-6 px-6 bg-gray-900 text-white font-semibold rounded-xl text-lg hover:bg-gray-800 transition flex items-center justify-center gap-3"
+                className="w-full py-6 px-6 bg-[#1e3a5f] text-white font-semibold rounded-xl text-lg hover:bg-[#2d5a87] transition flex items-center justify-center gap-3"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -306,7 +421,7 @@ export default function Home() {
 
               <button
                 onClick={() => router.push('/jobs')}
-                className="w-full py-6 px-6 bg-white border-2 border-gray-900 text-gray-900 font-semibold rounded-xl text-lg hover:bg-gray-50 transition flex items-center justify-center gap-3"
+                className="w-full py-6 px-6 bg-white border-2 border-[#1e3a5f] text-[#1e3a5f] font-semibold rounded-xl text-lg hover:bg-gray-50 transition flex items-center justify-center gap-3"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

@@ -3,18 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --primary: #1a1a2e;
-  --primary-light: #16213e;
-  --accent: #0f3460;
+  /* Paint-focused color palette - warm, professional */
+  --primary: #1e3a5f;
+  --primary-light: #2d5a87;
+  --primary-dark: #0f2744;
+  --accent: #e85d04;
+  --accent-light: #f48c06;
   --success: #16a34a;
   --warning: #f59e0b;
   --error: #dc2626;
+  /* Paint color accents */
+  --paint-blue: #2563eb;
+  --paint-green: #059669;
+  --paint-orange: #ea580c;
+  --paint-purple: #7c3aed;
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+}
+
+/* Paint splatter decoration */
+.paint-splatter {
+  position: relative;
+}
+
+.paint-splatter::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, var(--paint-orange) 0%, transparent 70%);
+  opacity: 0.1;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 /* Mobile-first touch targets */
@@ -41,10 +68,12 @@ button, a, input, select, textarea {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   transition: box-shadow 0.2s;
+  border-left: 4px solid var(--primary);
 }
 
 .job-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-left-color: var(--accent);
 }
 
 /* Line icon button */
@@ -75,11 +104,84 @@ button, a, input, select, textarea {
   width: 24px;
   height: 24px;
   border: 3px solid #e5e7eb;
-  border-top-color: #1a1a2e;
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Hero gradient - paint store aesthetic */
+.hero-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, #3b82f6 100%);
+}
+
+/* Live indicator pulse */
+.live-indicator {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* Testimonial card */
+.testimonial-card {
+  background: linear-gradient(135deg, #fefefe 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+}
+
+/* Paint swatch decoration */
+.paint-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Stats counter */
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Activity feed */
+.activity-item {
+  border-left: 2px solid #e2e8f0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.activity-item::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+/* Platform density bars */
+.density-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.density-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
 }
