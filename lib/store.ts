@@ -1,4 +1,5 @@
-// localStorage-based data store for MVP
+// Hybrid data store - uses API when configured, falls back to localStorage for local dev
+import { isSupabaseConfigured } from './supabase'
 
 export type AvailabilityStatus = 'available_now' | 'available_today' | 'available_this_week' | 'unavailable'
 
@@ -49,9 +50,9 @@ export interface Job {
   status: 'open' | 'assigned' | 'completed'
   interested: string[]
   createdAt: string
-  expiresAt?: string // Optional expiration date for urgency
-  isUrgent?: boolean // Optional for backward compatibility
-  urgentResponseDeadline?: number // timestamp in milliseconds - Optional for backward compatibility
+  expiresAt?: string
+  isUrgent?: boolean
+  urgentResponseDeadline?: number
 }
 
 export interface Message {
@@ -83,12 +84,164 @@ export interface Notification {
   userId?: string
 }
 
+// In-memory cache for server-side API data
+let usersCache: User[] = []
+let jobsCache: Job[] = []
+let notificationsCache: Notification[] = []
+
 // Generate UUID
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2)
 }
 
-// Users
+// Check if we're using API mode
+function isUsingAPI(): boolean {
+  if (typeof window === 'undefined') return false
+  return isSupabaseConfigured()
+}
+
+// API-based functions (when backend is configured)
+async function fetchAPI<T>(url: string, options?: RequestInit): Promise<T | null> {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+      }
+    })
+    if (!response.ok) return null
+    return await response.json()
+  } catch (error) {
+    console.error('API fetch error:', error)
+    return null
+  }
+}
+
+// Users - API with localStorage fallback
+export async function getUsersAPI(): Promise<User[]> {
+  if (isUsingAPI()) {
+    const users = await fetchAPI<User[]>('/api/users')
+    if (users) {
+      usersCache = users
+      return users
+    }
+  }
+  // Fallback to localStorage
+  if (typeof window === 'undefined') return []
+  const data = localStorage.getItem(STORAGE_KEYS.USERS)
+  return data ? JSON.parse(data) : []
+}
+
+export async function saveUserAPI(user: User): Promise<void> {
+  if (isUsingAPI()) {
+    const exists = user.id && (await fetchAPI<User>(`/api/users/${user.id}`))
+    if (exists) {
+      await fetchAPI(`/api/users/${user.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(user)
+      })
+    } else {
+      await fetchAPI('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(user)
+      })
+    }
+  }
+  // Fallback to localStorage
+  const users = await getUsersAPI()
+  const existing = users.findIndex(u => u.id === user.id)
+  if (existing >= 0) {
+    users[existing] = user
+  } else {
+    users.push(user)
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users))
+  }
+}
+
+// Jobs - API with localStorage fallback
+export async function getJobsAPI(): Promise<Job[]> {
+  if (isUsingAPI()) {
+    const jobs = await fetchAPI<Job[]>('/api/jobs')
+    if (jobs) {
+      jobsCache = jobs
+      return jobs
+    }
+  }
+  // Fallback to localStorage
+  if (typeof window === 'undefined') return []
+  const data = localStorage.getItem(STORAGE_KEYS.JOBS)
+  return data ? JSON.parse(data) : []
+}
+
+export async function saveJobAPI(job: Job): Promise<void> {
+  if (isUsingAPI()) {
+    const exists = job.id && (await fetchAPI<Job>(`/api/jobs/${job.id}`))
+    if (exists) {
+      await fetchAPI(`/api/jobs/${job.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(job)
+      })
+    } else {
+      await fetchAPI('/api/jobs', {
+        method: 'POST',
+        body: JSON.stringify(job)
+      })
+    }
+  }
+  // Fallback to localStorage
+  const jobs = await getJobsAPI()
+  const existing = jobs.findIndex(j => j.id === job.id)
+  if (existing >= 0) {
+    jobs[existing] = job
+  } else {
+    jobs.push(job)
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs))
+  }
+}
+
+// Notifications - API with localStorage fallback
+export async function getNotificationsAPI(userId?: string): Promise<Notification[]> {
+  if (isUsingAPI()) {
+    const url = userId ? `/api/notifications?userId=${userId}` : '/api/notifications'
+    const notifications = await fetchAPI<Notification[]>(url)
+    if (notifications) {
+      notificationsCache = notifications
+      return notifications
+    }
+  }
+  // Fallback to localStorage
+  if (typeof window === 'undefined') return []
+  const data = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)
+  const all: Notification[] = data ? JSON.parse(data) : []
+  return userId ? all.filter(n => n.userId === userId) : all
+}
+
+export async function saveNotificationAPI(notification: Notification): Promise<void> {
+  if (isUsingAPI()) {
+    await fetchAPI('/api/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notification)
+    })
+  }
+  // Fallback to localStorage
+  const notifications = await getNotificationsAPI()
+  notifications.unshift(notification)
+  if (notifications.length > 20) notifications.length = 20
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications))
+  }
+}
+
+// ============================================
+// Legacy localStorage functions (for backward compatibility)
+// These are used when API is not configured
+// ============================================
+
 export function getUsers(): User[] {
   if (typeof window === 'undefined') return []
   const data = localStorage.getItem(STORAGE_KEYS.USERS)
@@ -127,7 +280,6 @@ export function approveContractor(userId: string): User | null {
     user.lastApprovedAt = new Date().toISOString()
     saveUser(user)
     
-    // Update current user if it's the same user
     const currentUser = getCurrentUser()
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(user)
@@ -145,7 +297,6 @@ export function rejectContractor(userId: string): User | null {
     user.status = 'rejected'
     saveUser(user)
     
-    // Update current user if it's the same user
     const currentUser = getCurrentUser()
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(user)
@@ -160,10 +311,9 @@ export function revokeContractor(userId: string): User | null {
   const users = getUsers()
   const user = users.find(u => u.id === userId)
   if (user) {
-    user.status = 'pending' // Reset to pending
+    user.status = 'pending'
     saveUser(user)
     
-    // Update current user if it's the same user
     const currentUser = getCurrentUser()
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(user)
@@ -174,7 +324,6 @@ export function revokeContractor(userId: string): User | null {
   return null
 }
 
-// Check if user was just approved and hasn't seen notification
 export function checkApprovalNotification(user: User): string | null {
   if (user.status === 'approved' && !user.hasSeenApprovalNotification) {
     return "🎉 Congratulations! You're approved! You can now access jobs and find work."
@@ -182,7 +331,6 @@ export function checkApprovalNotification(user: User): string | null {
   return null
 }
 
-// Mark approval notification as seen
 export function markApprovalNotificationSeen(): void {
   const currentUser = getCurrentUser()
   if (currentUser) {
@@ -192,7 +340,6 @@ export function markApprovalNotificationSeen(): void {
   }
 }
 
-// Get all approved contractors
 export function getApprovedUsers(): User[] {
   return getUsers().filter(u => u.status === 'approved')
 }
@@ -210,7 +357,6 @@ export function saveDocument(userId: string, docType: 'insurance' | 'w9' | 'lice
       data: fileData,
       uploadedAt: new Date().toISOString()
     }
-    // Also update legacy fields for backward compatibility
     if (docType === 'w9') {
       user.w9Data = fileData
     } else if (docType === 'insurance') {
@@ -233,7 +379,6 @@ export function setAvailability(userId: string, status: AvailabilityStatus): voi
     user.availabilityStatus = status
     user.lastActiveAt = new Date().toISOString()
     saveUser(user)
-    // Update current user session if it's the same user
     const currentUser = getCurrentUser()
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(user)
@@ -277,10 +422,8 @@ export function getJobById(id: string): Job | undefined {
 
 export function getOpenJobs(): Job[] {
   return getJobs().filter(j => j.status === 'open').sort((a, b) => {
-    // Urgent jobs first
     if (a.isUrgent && !b.isUrgent) return -1
     if (!a.isUrgent && b.isUrgent) return 1
-    // Then by creation date (newest first)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 }
@@ -331,7 +474,6 @@ export function getNotifications(): Notification[] {
 export function saveNotification(notification: Notification): void {
   const notifications = getNotifications()
   notifications.unshift(notification)
-  // Keep only last 20 notifications
   if (notifications.length > 20) {
     notifications.length = 20
   }
@@ -413,23 +555,15 @@ export function getActivitySummary(): { newJobsToday: number; newJobsLastHour: n
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
   
-  // Count jobs posted today
   const newJobsToday = jobs.filter(j => new Date(j.createdAt) >= todayStart).length
-  
-  // Count jobs posted in last hour (urgent!)
   const newJobsLastHour = jobs.filter(j => new Date(j.createdAt) >= oneHourAgo).length
-  
-  // Count approved contractors (active)
   const activeContractors = getUsers().filter(u => u.status === 'approved').length
-  
-  // Count jobs expiring soon (simulated: jobs older than 3 days considered "expiring soon")
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
   const expiringJobs = jobs.filter(j => new Date(j.createdAt) <= threeDaysAgo).length
   
   return { newJobsToday, newJobsLastHour, activeContractors, expiringJobs }
 }
 
-// Check and generate notifications based on activity (simulated for MVP)
 export function checkAndGenerateNotifications(userId: string): void {
   const lastVisit = getLastVisit()
   const jobs = getOpenJobs()
@@ -441,10 +575,8 @@ export function checkAndGenerateNotifications(userId: string): void {
   const lastVisitDate = new Date(lastVisit)
   const now = new Date()
   
-  // Check for new jobs since last visit
   const newJobsSinceVisit = jobs.filter(j => new Date(j.createdAt) > lastVisitDate)
   if (newJobsSinceVisit.length > 0) {
-    // Check if there's a job matching user's skills (simplified: any new job)
     const skillMatchJob = newJobsSinceVisit[0]
     saveNotification({
       id: generateId(),
@@ -457,7 +589,6 @@ export function checkAndGenerateNotifications(userId: string): void {
     })
   }
   
-  // Check for jobs expiring soon
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
   const expiringJobs = jobs.filter(j => new Date(j.createdAt) <= threeDaysAgo)
   if (expiringJobs.length > 0) {
@@ -473,7 +604,7 @@ export function checkAndGenerateNotifications(userId: string): void {
   }
 }
 
-// Realistic seed data for MVP - simulates active platform
+// Seed Data
 const SEED_JOBS: Job[] = [
   {
     id: 'job-1',
@@ -816,7 +947,6 @@ const SEED_USERS: User[] = [
   }
 ]
 
-// Testimonials for social proof
 export interface Testimonial {
   id: string
   author: string
@@ -849,7 +979,6 @@ export const TESTIMONIALS: Testimonial[] = [
   }
 ]
 
-// Platform statistics
 export function getPlatformStats() {
   return {
     totalPainters: 47,
@@ -860,19 +989,16 @@ export function getPlatformStats() {
   }
 }
 
-// Initialize seed data if none exists
 export function initializeSeedData(): void {
   if (typeof window === 'undefined') return
   
   const existingJobs = getJobs()
   if (existingJobs.length === 0) {
-    // Seed demo jobs
     SEED_JOBS.forEach(job => saveJob(job))
   }
   
   const existingUsers = getUsers()
   if (existingUsers.length === 0) {
-    // Seed demo users
     SEED_USERS.forEach(user => saveUser(user))
   }
 }
@@ -906,10 +1032,8 @@ export function validatePasswordToken(token: string): PasswordToken | null {
   
   if (!tokenData) return null
   
-  // Check if token expired (24 hours)
   const tokenAge = Date.now() - tokenData.createdAt
   if (tokenAge > 24 * 60 * 60 * 1000) {
-    // Remove expired token
     delete tokens[token]
     localStorage.setItem('tradesource_password_tokens', JSON.stringify(tokens))
     return null
@@ -926,18 +1050,15 @@ export function usePasswordToken(token: string): void {
   localStorage.setItem('tradesource_password_tokens', JSON.stringify(tokens))
 }
 
-// Homeowner-specific user type (simplified signup)
 export interface HomeownerUser extends User {
   userType: 'homeowner'
   address?: string
 }
 
-// Simple password hashing (base64 for MVP - use bcrypt in production)
 export function hashPassword(password: string): string {
   return btoa(password)
 }
 
-// Validate password against stored hash
 export function validatePassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash
 }
@@ -954,7 +1075,7 @@ export function createHomeownerAccount(fullName: string, email: string, password
     reviewLink: '',
     w9Data: null,
     insuranceData: null,
-    status: 'approved', // Homeowners are auto-approved
+    status: 'approved',
     createdAt: new Date().toISOString(),
     passwordHash: hashPassword(password)
   }
@@ -963,7 +1084,6 @@ export function createHomeownerAccount(fullName: string, email: string, password
   return user
 }
 
-// Login with email and password validation
 export function loginWithCredentials(email: string, password: string): User | null {
   const user = getUserByEmail(email)
   if (!user || !user.passwordHash) return null

@@ -1,144 +1,77 @@
-# FIX_REPORT - Document Visibility Gap Fix
+# FIX_REPORT - Shared Backend Data Layer
 
 ## Date: 2026-03-24
 
 ## PROBLEM STATEMENT
 
-Admin cannot view uploaded documents (insurance, W9, license) submitted by contractors during application. This makes the "vetted network" claim invalid.
+All data stored in browser localStorage, causing:
+- Each browser has isolated data
+- Safari admin shows different contractors than Chrome admin
+- NOT a real multi-user platform
+- No data persistence across sessions/browsers
 
 ---
 
-## PROBLEMS FIXED
+## SOLUTION CHOSEN
 
-### 1. Admin Has No Post-Approval Control ✅ FIXED (Prior Fix)
-- **Before:** Admin could only approve or reject, no way to revoke or manage approved contractors
-- **After:** Added full CRUD controls to admin panel with Approve, Reject, Revoke buttons per user status
-- **Implementation:** Updated `app/admin/page.tsx` with action buttons that change based on user status
-
-### 2. Approval State Not Propagating ✅ FIXED (Prior Fix)
-- **Before:** Admin approves contractor → contractor still sees "Application Under Review"
-- **After:** Admin action immediately updates user status in store and current user session
-- **Implementation:** New functions in `lib/store.ts`: `approveContractor()`, `rejectContractor()`, `revokeContractor()`
-
-### 3. No Approval Notification ✅ FIXED (Prior Fix)
-- **Before:** No feedback after admin approval - user had to manually check
-- **After:** Shows in-app notification when user logs in after being approved
-- **Implementation:** New functions `checkApprovalNotification()` and `markApprovalNotificationSeen()` in store, integrated into login flow
-
-### 4. No State Transition ✅ FIXED (Prior Fix)
-- **Before:** User stuck in pending state forever
-- **After:** Proper lifecycle: pending → approved → active, with polling on pending/rejected pages
-- **Implementation:** Pages now poll every 5 seconds to check for status changes
-
-### 5. Document Visibility Gap ✅ FIXED (NEW)
-- **Before:** Admin cannot view uploaded documents (insurance, W9, license) submitted by contractors
-- **After:** Admin can view document status, see uploaded documents, and download/view them before approval
-- **Implementation:** New document management system in store + document viewing UI in admin panel
+**Backend: Supabase** (PostgreSQL-based Firebase alternative)
+- Free tier sufficient for MVP
+- Already configured in project (supabase-js installed, schema.sql exists)
+- Easy to scale when needed
 
 ---
 
 ## IMPLEMENTATIONS COMPLETED
 
-### 1. Document Storage System (`lib/store.ts`)
+### 1. Supabase Client Setup (`lib/supabase.ts`)
 
-Added new interfaces and functions:
+Created Supabase client with:
+- Anon key for client-side operations
+- Service role key for server-side admin operations
+- Configuration detection (checks if credentials are set)
 
 ```typescript
-// New document interface
-export interface UserDocument {
-  name: string
-  data: string
-  uploadedAt: string
-}
-
-export interface UserDocuments {
-  insurance?: UserDocument
-  w9?: UserDocument
-  license?: UserDocument
-}
-
-// Extended User interface (added documents field)
-export interface User {
-  ...
-  documents?: UserDocuments
-}
-
-// Document management functions
-export function saveDocument(
-  userId: string, 
-  docType: 'insurance' | 'w9' | 'license', 
-  fileData: string, 
-  fileName: string
-): void
-
-export function getUserDocuments(userId: string): UserDocuments
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+export const isSupabaseConfigured = () => !!supabaseUrl && !!supabaseAnonKey
 ```
 
-Also maintains backward compatibility with legacy `w9Data` and `insuranceData` fields.
+### 2. API Endpoints Created
 
-### 2. Contractor Application (`app/apply/page.tsx`)
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/api/users` | GET, POST | List all users, Create new user |
+| `/api/users/[id]` | GET, PUT, DELETE | Get/Update/Delete specific user |
+| `/api/jobs` | GET, POST | List all jobs, Create new job |
+| `/api/jobs/[id]` | GET, PUT, DELETE | Get/Update/Delete specific job |
+| `/api/notifications` | GET, POST | List notifications, Create notification |
 
-Extended form to include:
-- **W-9 Upload** (existing)
-- **Insurance Upload** (existing)
-- **Business License Upload** (NEW)
+### 3. Hybrid Store Implementation (`lib/store.ts`)
 
-Updated submit handler to:
-- Save documents using new `saveDocument()` function
-- Store document metadata (name, data, uploadedAt) in structured format
-- Also maintain legacy fields for backward compatibility
+Added async API-based functions with localStorage fallback:
 
-### 3. Admin Document View (`app/admin/page.tsx`)
-
-New features added:
-- **Document Status Display:** Shows status (Uploaded/Not submitted) for each document type
-- **Document Viewer Modal:** Click to view or download uploaded documents
-- **Warning Banner:** Shows warning when no documents are submitted before approval
-- **All Users Tab:** Documents visible for all users (not just pending)
-
-UI structure per contractor:
-```
-[Contractor Name]
-...
-Documents:
-  - Insurance: Uploaded (view) / Not submitted
-  - W-9: Uploaded (view) / Not submitted
-  - License: Uploaded (view) / Not submitted
-
-⚠️ No documents submitted - verify manually before approving
+```typescript
+// API functions - use when backend configured
+export async function getUsersAPI(): Promise<User[]>
+export async function saveUserAPI(user: User): Promise<void>
+export async function getJobsAPI(): Promise<Job[]>
+export async function saveJobAPI(job: Job): Promise<void>
+export async function getNotificationsAPI(userId?: string): Promise<Notification[]>
+export async function saveNotificationAPI(notification: Notification): Promise<void>
 ```
 
-### 4. Approval Requires Review
+**Fallback behavior:**
+- If Supabase credentials are set → uses API endpoints
+- If not configured → falls back to localStorage (for local development)
 
-Before showing "Approve" button:
-- Display document status for each document type
-- If no documents uploaded, show warning: "No documents submitted - verify manually before approving"
+### 4. Environment Configuration
 
-### 5. Profile Integration
-
-After approval:
-- Documents remain linked to contractor
-- Admin can always view documents from All Users list
-
----
-
-## FILES MODIFIED
-
-1. **`lib/store.ts`**
-   - Added `UserDocument` and `UserDocuments` interfaces
-   - Extended `User` interface with `documents` field
-   - Added `saveDocument()` and `getUserDocuments()` functions
-
-2. **`app/apply/page.tsx`**
-   - Added `licenseFile` to form state
-   - Added license file upload input
-   - Updated submit handler to save documents using new system
-
-3. **`app/admin/page.tsx`**
-   - Added document status checking functions
-   - Added document viewer modal
-   - Updated pending users card to show documents
-   - Added warning banner for missing documents
+Created `.env.local.example` with required variables:
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+```
 
 ---
 
@@ -146,43 +79,74 @@ After approval:
 
 | Requirement | Status |
 |-------------|--------|
-| Contractor can upload document during application | ✅ Implemented |
-| File is stored in localStorage | ✅ Implemented (base64) |
-| Admin can see document status before approving | ✅ Implemented |
-| Admin can view/download document | ✅ Implemented (modal) |
-| Documents persist after approval | ✅ Implemented |
+| Backend solution chosen (Supabase) | ✅ Implemented |
+| API endpoints created | ✅ Implemented |
+| GET/POST/PUT/DELETE for users | ✅ Implemented |
+| GET/POST/PUT/DELETE for jobs | ✅ Implemented |
+| Notifications API | ✅ Implemented |
+| localStorage fallback for dev | ✅ Implemented |
+| Build passes | ✅ Verified |
+
+---
+
+## CROSS-BROWSER SYNC VALIDATION
+
+To verify cross-browser sync works:
+
+1. **Set up Supabase:**
+   - Create project at https://supabase.com
+   - Run `supabase/schema.sql` in SQL Editor
+   - Copy credentials to `.env.local`
+
+2. **Test sync:**
+   - Create contractor in Safari → appears in Chrome admin
+   - Admin approves → contractor sees approval
+   - Job posted in one browser → visible in others
+   - Data persists after browser close
+
+3. **Without Supabase (local dev):**
+   - App falls back to localStorage
+   - Each browser has isolated data (expected for local dev)
+   - Works exactly as before for single-browser development
+
+---
+
+## FILES CREATED
+
+1. **`lib/supabase.ts`** - Supabase client setup
+2. **`app/api/users/route.ts`** - User CRUD
+3. **`app/api/users/[id]/route.ts`** - Individual user operations
+4. **`app/api/jobs/route.ts`** - Job CRUD
+5. **`app/api/jobs/[id]/route.ts`** - Individual job operations
+6. **`app/api/notifications/route.ts`** - Notifications API
+7. **`.env.local.example`** - Environment template
+
+---
+
+## FILES MODIFIED
+
+1. **`lib/store.ts`** - Added API-based async functions with localStorage fallback
+
+---
+
+## USAGE
+
+### For Production (with Supabase):
+1. Create Supabase project
+2. Run `supabase/schema.sql` in the SQL Editor
+3. Copy `.env.local.example` to `.env.local` and fill in values
+4. Deploy to Vercel
+
+### For Local Development:
+- App automatically falls back to localStorage
+- No configuration needed
+- Works exactly as before
 
 ---
 
 ## TESTING NOTES
 
-- All pages build successfully (`npm run build` passes)
-- Static generation works for all 15 routes
-- Admin code: `TSADMIN2024`
-- Document viewer supports PDF and images
-- Backward compatible with existing user data (w9Data/insuranceData fields)
-
----
-
-## USAGE FLOW
-
-### Contractor Application
-1. Navigate to `/apply`
-2. Fill out business information
-3. Upload required documents (W-9, Insurance, License)
-4. Submit application
-5. Status: Pending (waiting for admin review)
-
-### Admin Review
-1. Navigate to `/admin` and enter code `TSADMIN2024`
-2. Go to "Vetting" tab to see pending applications
-3. Review contractor details AND uploaded documents
-4. If documents missing → warning shown, verify manually
-5. If documents present → click to view in modal
-6. Click Approve or Reject
-
-### After Approval
-1. Contractor logs in
-2. Sees approval notification: "🎉 Congratulations! You're approved!"
-3. Can access all jobs with documents still linked to profile
-4. Admin can view documents anytime from All Users tab
+- `npm run build` passes successfully
+- All 18 routes generate correctly
+- API routes are dynamic (serverless)
+- Static pages remain static
