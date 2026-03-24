@@ -13,6 +13,8 @@ export interface User {
   insuranceData: string | null
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string
+  passwordHash?: string
+  userType?: 'contractor' | 'homeowner'
 }
 
 export interface Job {
@@ -673,4 +675,79 @@ export function initializeSeedData(): void {
     // Seed demo users
     SEED_USERS.forEach(user => saveUser(user))
   }
+}
+
+// Password reset token management
+export interface PasswordToken {
+  userId: string
+  createdAt: number
+  email: string
+}
+
+export function createPasswordToken(userId: string, email: string): string {
+  if (typeof window === 'undefined') return ''
+  
+  const token = generateId() + generateId()
+  const tokens = JSON.parse(localStorage.getItem('tradesource_password_tokens') || '{}')
+  tokens[token] = {
+    userId,
+    email,
+    createdAt: Date.now()
+  }
+  localStorage.setItem('tradesource_password_tokens', JSON.stringify(tokens))
+  return token
+}
+
+export function validatePasswordToken(token: string): PasswordToken | null {
+  if (typeof window === 'undefined') return null
+  
+  const tokens = JSON.parse(localStorage.getItem('tradesource_password_tokens') || '{}')
+  const tokenData = tokens[token]
+  
+  if (!tokenData) return null
+  
+  // Check if token expired (24 hours)
+  const tokenAge = Date.now() - tokenData.createdAt
+  if (tokenAge > 24 * 60 * 60 * 1000) {
+    // Remove expired token
+    delete tokens[token]
+    localStorage.setItem('tradesource_password_tokens', JSON.stringify(tokens))
+    return null
+  }
+  
+  return tokenData
+}
+
+export function usePasswordToken(token: string): void {
+  if (typeof window === 'undefined') return
+  
+  const tokens = JSON.parse(localStorage.getItem('tradesource_password_tokens') || '{}')
+  delete tokens[token]
+  localStorage.setItem('tradesource_password_tokens', JSON.stringify(tokens))
+}
+
+// Homeowner-specific user type (simplified signup)
+export interface HomeownerUser extends User {
+  userType: 'homeowner'
+  address?: string
+}
+
+export function createHomeownerAccount(fullName: string, email: string, password: string): User {
+  const user: User = {
+    id: generateId(),
+    fullName,
+    businessName: 'Homeowner',
+    email,
+    phone: '',
+    licenseNumber: '',
+    yearsExperience: 0,
+    reviewLink: '',
+    w9Data: null,
+    insuranceData: null,
+    status: 'approved', // Homeowners are auto-approved
+    createdAt: new Date().toISOString()
+  }
+  
+  saveUser(user)
+  return user
 }

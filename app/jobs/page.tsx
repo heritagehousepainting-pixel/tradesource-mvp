@@ -86,7 +86,15 @@ export default function JobsPage() {
     }
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, userStatus: string) => {
+    // Non-approved contractors see blurred prices
+    if (userStatus !== 'approved') {
+      return (
+        <span className="blur-sm select-none text-gray-400" aria-label="Price hidden for non-vetted contractors">
+          $_,___
+        </span>
+      )
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -202,9 +210,9 @@ export default function JobsPage() {
                 {/* Job title */}
                 <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
 
-                {/* Price */}
+                {/* Price - blurred for non-approved users */}
                 <p className="text-xl font-bold text-gray-900 mb-2">
-                  {formatPrice(job.price)}
+                  {formatPrice(job.price, user.status)}
                 </p>
 
                 {/* Location & Timing */}
