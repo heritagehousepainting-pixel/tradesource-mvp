@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, setCurrentUser, getUserByEmail, User } from '@/lib/store'
+import { getCurrentUser, setCurrentUser, getUserByEmail, loginWithCredentials, User } from '@/lib/store'
 
 export default function Login() {
   const router = useRouter()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -23,56 +24,32 @@ export default function Login() {
     setLoading(true)
 
     try {
-      // Simple lookup by email - in production would use proper auth
-      const user = getUserByEmail(email)
+      // Look up user by email
+      const existingUser = getUserByEmail(email)
       
-      if (!user) {
-        // For demo: create a test approved user
-        const testUser: User = {
-          id: 'user-' + Date.now(),
-          fullName: 'New User',
-          businessName: 'Your Painting Business',
-          email: email,
-          phone: '(610) 555-0100',
-          licenseNumber: 'PA00000',
-          yearsExperience: 1,
-          reviewLink: 'https://example.com/reviews',
-          w9Data: null,
-          insuranceData: null,
-          status: 'approved',
-          createdAt: new Date().toISOString()
+      // If user exists with a password hash, validate password
+      if (existingUser && existingUser.passwordHash) {
+        const validatedUser = loginWithCredentials(email, password)
+        if (!validatedUser) {
+          setError('Invalid email or password.')
+          setLoading(false)
+          return
         }
-        // Save and login
-        // For MVP demo, just set current user
-      }
-
-      if (user) {
-        setCurrentUser(user)
-        if (user.status === 'pending') {
+        setCurrentUser(validatedUser)
+        if (validatedUser.status === 'pending') {
           router.push('/pending')
-        } else if (user.status === 'rejected') {
+        } else if (validatedUser.status === 'rejected') {
           setError('Your account has been rejected. Contact support.')
         } else {
           router.push('/')
         }
-      } else {
-        // Create new user session
-        const newUser: User = {
-          id: 'user-' + Date.now(),
-          fullName: 'New User',
-          businessName: 'Your Business',
-          email: email,
-          phone: '(610) 555-0100',
-          licenseNumber: 'PA00000',
-          yearsExperience: 1,
-          reviewLink: 'https://example.com',
-          w9Data: null,
-          insuranceData: null,
-          status: 'approved',
-          createdAt: new Date().toISOString()
-        }
-        setCurrentUser(newUser)
+      } else if (existingUser) {
+        // Legacy user without password - allow login for demo
+        setCurrentUser(existingUser)
         router.push('/')
+      } else {
+        // No user found - show error
+        setError('No account found with this email. Please sign up first.')
       }
     } catch (err) {
       setError('Login failed. Please try again.')
@@ -113,6 +90,18 @@ export default function Login() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
             {error && (
               <p className="text-red-600 text-sm">{error}</p>
             )}
@@ -127,7 +116,7 @@ export default function Login() {
           </form>
 
           <p className="text-sm text-gray-500 text-center mt-4">
-            New here? <button onClick={() => router.push('/apply')} className="text-gray-900 font-medium">Apply now</button>
+            New here? <button onClick={() => router.push('/signup')} className="text-gray-900 font-medium">Sign up</button>
           </p>
         </div>
       </main>

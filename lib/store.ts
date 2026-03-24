@@ -732,6 +732,16 @@ export interface HomeownerUser extends User {
   address?: string
 }
 
+// Simple password hashing (base64 for MVP - use bcrypt in production)
+export function hashPassword(password: string): string {
+  return btoa(password)
+}
+
+// Validate password against stored hash
+export function validatePassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash
+}
+
 export function createHomeownerAccount(fullName: string, email: string, password: string): User {
   const user: User = {
     id: generateId(),
@@ -745,9 +755,18 @@ export function createHomeownerAccount(fullName: string, email: string, password
     w9Data: null,
     insuranceData: null,
     status: 'approved', // Homeowners are auto-approved
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    passwordHash: hashPassword(password)
   }
   
   saveUser(user)
+  return user
+}
+
+// Login with email and password validation
+export function loginWithCredentials(email: string, password: string): User | null {
+  const user = getUserByEmail(email)
+  if (!user || !user.passwordHash) return null
+  if (!validatePassword(password, user.passwordHash)) return null
   return user
 }

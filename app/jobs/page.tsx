@@ -42,12 +42,8 @@ export default function JobsPage() {
       return
     }
     setUser(currentUser)
-    
-    if (currentUser.status !== 'approved') {
-      router.push('/pending')
-      return
-    }
-
+    // Allow non-approved users to view jobs with blurred prices
+    // Removed: if (currentUser.status !== 'approved') { router.push('/pending'); return }
     setJobs(getOpenJobs())
     setLoading(false)
   }, [router])
@@ -164,6 +160,27 @@ export default function JobsPage() {
       </header>
 
       <main className={getContainerClass()}>
+        {/* Upgrade message for non-approved users */}
+        {user?.status !== 'approved' && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  {user?.status === 'pending' 
+                    ? 'Your application is pending approval.' 
+                    : 'Your application was not approved.'}
+                </p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Upgrade to verified to see prices and apply for jobs. 
+                  <button onClick={() => router.push('/apply')} className="underline ml-1">Update application</button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {jobs.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
