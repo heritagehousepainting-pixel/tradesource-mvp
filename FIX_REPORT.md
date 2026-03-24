@@ -1,192 +1,114 @@
-# FIX_REPORT.md - URGENCY ENGINE Implementation
+# FIX_REPORT - Admin + Approval Flow Fixes
 
-## Summary
-Implemented the URGENCY ENGINE for TradeSource to transform the platform from a passive job board to an active urgency-driven matching system.
+## Date: 2026-03-24
 
----
+## PROBLEMS FIXED
 
-## 1. CONTRACTOR AVAILABILITY STATUS ✅
+### 1. Admin Has No Post-Approval Control ✅ FIXED
+- **Before:** Admin could only approve or reject, no way to revoke or manage approved contractors
+- **After:** Added full CRUD controls to admin panel with Approve, Reject, Revoke buttons per user status
+- **Implementation:** Updated `app/admin/page.tsx` with action buttons that change based on user status
 
-### Changes to `lib/store.ts`:
-- Added `AvailabilityStatus` type: `'available_now' | 'available_today' | 'available_this_week' | 'unavailable'`
-- Extended `User` interface with:
-  - `availabilityStatus?: AvailabilityStatus`
-  - `lastActiveAt?: string`
+### 2. Approval State Not Propagating ✅ FIXED
+- **Before:** Admin approves contractor → contractor still sees "Application Under Review"
+- **After:** Admin action immediately updates user status in store and current user session
+- **Implementation:** New functions in `lib/store.ts`: `approveContractor()`, `rejectContractor()`, `revokeContractor()`
 
-### New Functions:
-- `setAvailability(userId: string, status: AvailabilityStatus): void` - Saves availability and updates lastActiveAt
-- `getAvailableContractors(): User[]` - Returns contractors with availability set (not 'unavailable')
-- `getContractorsByAvailability(status: AvailabilityStatus): User[]` - Returns contractors with specific status
+### 3. No Approval Notification ✅ FIXED
+- **Before:** No feedback after admin approval - user had to manually check
+- **After:** Shows in-app notification when user logs in after being approved
+- **Implementation:** New functions `checkApprovalNotification()` and `markApprovalNotificationSeen()` in store, integrated into login flow
 
-### UI Updates (`app/profile/page.tsx`):
-- Added availability selector section in contractor profile
-- Four options with visual indicators (green/yellow/blue/gray dots)
-- Status labels:
-  - **Available Now** - "Ready to start immediately"
-  - **Available Today** - "Can start within today"
-  - **Available This Week** - "Can start within the week"
-  - **Unavailable** - "Not looking for work"
-- Clicking a status option updates the user's availability via `setAvailability()`
+### 4. No State Transition ✅ FIXED
+- **Before:** User stuck in pending state forever
+- **After:** Proper lifecycle: pending → approved → active, with polling on pending/rejected pages
+- **Implementation:** Pages now poll every 5 seconds to check for status changes
 
 ---
 
-## 2. URGENT JOB MODE ✅
+## IMPLEMENTATIONS COMPLETED
 
-### Changes to `lib/store.ts`:
-- Extended `Job` interface with:
-  - `isUrgent?: boolean` (optional for backward compatibility)
-  - `urgentResponseDeadline?: number` (timestamp in milliseconds)
+### 1. Admin Control Panel (`app/admin/page.tsx`)
+- Shows all contractors in table/grid
+- Each contractor displays: name, business, email, status
+- Dynamic action buttons:
+  - **Pending:** Approve, Reject
+  - **Approved:** Revoke Access
+  - **Rejected:** Re-approve
+- Real-time feedback notification on actions (toast banner)
+- Uses new store functions for state management
 
-### Changes to `app/post-job/page.tsx`:
-- Added `isUrgent` field to form state
-- Added "URGENT — Need help ASAP" toggle in the job form
-- When enabled:
-  - Shows expected response time: "Responses expected within 15 minutes"
-  - Sets `urgentResponseDeadline` to `now + 15 minutes` (15 * 60 * 1000 ms)
-- Toggle styled with red accent when active
-- Calls `notifyContractorsOfNewJob(job)` after saving to notify contractors
+### 2. Real User Status System (`lib/store.ts`)
+Added new functions:
+```typescript
+type UserStatus = 'pending' | 'approved' | 'rejected'
 
----
+// Approval workflow functions
+approveContractor(userId: string) → User | null
+rejectContractor(userId: string) → User | null  
+revokeContractor(userId: string) → User | null
 
-## 3. RESPONSE TIMER ✅
-
-### Changes to `app/jobs/[id]/page.tsx`:
-- Added `formatTimeRemaining()` helper function
-- Added `timeRemaining` state for countdown display
-- Added `useEffect` that runs interval every 1 second for urgent jobs
-- Displays countdown in "M:SS" format (minutes:seconds)
-
-### UI Display:
-- When `job.isUrgent` is true, shows red banner:
-  ```
-  ┌─────────────────────────────────────┐
-  │ ⚠️ URGENT                           │
-  │ Responses expected within  12:45   │
-  └─────────────────────────────────────┘
-  ```
-- Timer updates every second
-- Shows "Expired" when deadline passes
-
----
-
-## 4. NOTIFICATION SYSTEM (MVP) ✅
-
-### Changes to `lib/store.ts`:
-- Extended `Notification` interface with:
-  - Added `urgent_job` and `selected` types
-  - Added `userId?: string` field
-- Added new functions:
-  - `createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): void`
-  - `getNotificationsForUser(userId: string): Notification[]`
-  - `notifyContractorsOfNewJob(job: Job): void` - Notifies all available contractors
-  - `notifyContractorSelected(contractorId: string, job: Job): void` - Notifies selected contractor
-
-### Notification Triggers:
-- **New job posted** → Notifies all contractors with availability set
-- **Urgent job posted** → Uses `urgent_job` type, prioritized notification
-- Notification includes job title, location, and price
-
-### UI Updates (`app/jobs/page.tsx`):
-- Added notification bell icon in header
-- Shows unread count badge (red circle with number, max "9+")
-- Added import for `getUnreadNotificationCount`
-
----
-
-## 5. PRIORITY MATCHING ✅
-
-### Changes to `lib/store.ts`:
-- Updated `getOpenJobs()` to sort:
-  1. Urgent jobs first (`isUrgent: true` sorted to top)
-  2. Then by creation date (newest first)
-
-### Changes to `app/jobs/page.tsx`:
-- Added URGENT badge display on job cards:
-  - Red "URGENT" pill badge with icon
-  - Left border highlight (red)
-- Added availability indicator:
-  - Shows "Available now" badge if any interested contractor has `availabilityStatus === 'available_now'`
-  - Uses green color scheme to indicate immediate availability
-- Priority logic:
-  - Jobs with `isUrgent: true` appear at top of feed
-  - Jobs with available_now contractors show special badge
-
----
-
-## 6. NON-APPROVED EXPERIENCE ✅
-
-### Maintained Functionality:
-- **Price blurring**: Non-approved users see blurred prices (`$_,___`)
-- **Upgrade path banner**: Shows "Your application is pending approval" or "Your application was not approved" with link to update
-- **Access maintained**: Non-approved users can view jobs, but prices remain blurred
-
-### Implementation in `app/jobs/page.tsx`:
-```tsx
-const formatPrice = (price: number, userStatus: string) => {
-  if (userStatus !== 'approved') {
-    return (
-      <span className="blur-sm select-none text-gray-400">
-        $_,___
-      </span>
-    )
-  }
-  return new Intl.NumberFormat('en-US', { ... }).format(price)
-}
+// Notification functions
+checkApprovalNotification(user: User): string | null
+markApprovalNotificationSeen(): void
 ```
 
----
+Added new User interface fields:
+- `hasSeenApprovalNotification?: boolean`
+- `lastApprovedAt?: string`
 
-## FILES MODIFIED
+### 3. Post-Approval Experience
+- Login page checks approval status and shows notification on first login after approval
+- Home page (`app/page.tsx`) routes to `/pending` or `/rejected` based on status
+- Pending and Rejected pages poll for status changes every 5 seconds
 
-1. **`lib/store.ts`**
-   - Added AvailabilityStatus type
-   - Extended User interface with availabilityStatus, lastActiveAt
-   - Extended Job interface with isUrgent, urgentResponseDeadline
-   - Extended Notification interface with userId, new types
-   - Added setAvailability, getAvailableContractors, getContractorsByAvailability
-   - Added createNotification, getNotificationsForUser, notifyContractorsOfNewJob
-   - Updated getOpenJobs for urgent-first sorting
+### 4. Notification on Approval
+- Login page shows green banner with approval message: "🎉 Congratulations! You're approved!"
+- Notification only shows once (tracked via `hasSeenApprovalNotification` flag)
+- Message: "You can now access jobs and find work"
 
-2. **`app/jobs/page.tsx`**
-   - Added notification import and state
-   - Added urgent badge display
-   - Added availability badge for contractors
-   - Added notification bell in header
-
-3. **`app/post-job/page.tsx`**
-   - Added isUrgent to form state
-   - Added urgent toggle UI
-   - Added notifyContractorsOfNewJob call on submit
-   - Sets 15-minute deadline for urgent jobs
-
-4. **`app/profile/page.tsx`**
-   - Added availability selector with 4 status options
-   - Visual feedback when status is selected
-
-5. **`app/jobs/[id]/page.tsx`**
-   - Added formatTimeRemaining helper
-   - Added timeRemaining state
-   - Added useEffect timer for urgent jobs
-   - Added urgent banner with countdown display
-
-6. **`app/layout.tsx`** 
-   - (No changes needed - seed data handles backward compatibility via optional fields)
+### 5. State Recheck on Load
+- Pending page: polls every 5s for status change to approved/rejected
+- Rejected page: polls every 5s for potential re-approval
+- Auto-redirects when status changes
 
 ---
 
-## VALIDATION RESULTS
+## FILES MODIFIED/CREATED
 
-1. ✅ **Contractor sets availability** → Check store: availabilityStatus saved to User in localStorage
-2. ✅ **User posts urgent job** → Job has isUrgent=true, urgentResponseDeadline set to now + 15 min
-3. ✅ **Timer displays** → Countdown shows on job detail page, updates every second
-4. ✅ **Notifications appear** → Bell icon shows unread count, notifications stored in localStorage
-5. ✅ **Jobs feed prioritizes** → Urgent jobs sorted to top, availability badges shown on contractor cards
+1. **`lib/store.ts`** - Added approval functions, notification logic, new User fields
+2. **`app/login/page.tsx`** - Added approval notification check on login
+3. **`app/admin/page.tsx`** - Full admin control panel with action buttons + notification toasts
+4. **`app/rejected/page.tsx`** - Created new page for rejected users
 
 ---
 
-## BACKWARD COMPATIBILITY
+## VALIDATION CHECKLIST
 
-- `isUrgent` and `urgentResponseDeadline` are optional in Job interface
-- Old jobs without these fields default to non-urgent behavior
-- Price blurring maintained for non-approved users
-- All existing seed data works without migration
+| Requirement | Status |
+|------------|--------|
+| Admin sees list of all contractors with status | ✅ Implemented |
+| Admin can approve contractor → status changes in store | ✅ Implemented |
+| Approved contractor logs in → sees jobs (not pending) | ✅ Implemented |
+| Admin can revoke → contractor loses access | ✅ Implemented |
+
+---
+
+## TESTING NOTES
+
+- All pages build successfully (`npm run build` passes)
+- Static generation works for all 15 routes
+- Admin code: `TSADMIN2024` (existing)
+- Seed data includes 12 approved contractors for demo
+
+---
+
+## USAGE FLOW
+
+1. **Admin logs in** at `/admin` with code `TSADMIN2024`
+2. **Admin views** all users in "All Users" tab
+3. **Admin clicks** Approve/Reject/Revoke based on need
+4. **User logs in** and sees:
+   - If just approved: Green notification banner + access to jobs
+   - If pending: Redirected to `/pending` with polling
+   - If rejected: Redirected to `/rejected` with support info

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, getPendingUsers, saveUser, User } from '@/lib/store'
+import { getUsers, getPendingUsers, saveUser, User, approveContractor, rejectContractor, revokeContractor } from '@/lib/store'
 
 // Simple admin code for MVP
 const ADMIN_CODE = 'TSADMIN2024'
@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [pendingUsers, setPendingUsers] = useState<User[]>([])
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [activeTab, setActiveTab] = useState<'vetting' | 'users'>('vetting')
+  const [notification, setNotification] = useState<string | null>(null)
 
   const loadUsers = () => {
     setPendingUsers(getPendingUsers())
@@ -36,19 +37,28 @@ export default function AdminPage() {
   }
 
   const handleApprove = (userId: string) => {
-    const user = getUsers().find(u => u.id === userId)
+    const user = approveContractor(userId)
     if (user) {
-      user.status = 'approved'
-      saveUser(user)
+      setNotification(`✅ Approved ${user.fullName}`)
+      setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
   }
 
   const handleReject = (userId: string) => {
-    const user = getUsers().find(u => u.id === userId)
+    const user = rejectContractor(userId)
     if (user) {
-      user.status = 'rejected'
-      saveUser(user)
+      setNotification(`❌ Rejected ${user.fullName}`)
+      setTimeout(() => setNotification(null), 3000)
+      loadUsers()
+    }
+  }
+
+  const handleRevoke = (userId: string) => {
+    const user = revokeContractor(userId)
+    if (user) {
+      setNotification(`🔄 Revoked access for ${user.fullName}`)
+      setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
   }
@@ -107,8 +117,16 @@ export default function AdminPage() {
     )
   }
 
+  // Notification banner
+  const notificationBanner = notification ? (
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg">
+      {notification}
+    </div>
+  ) : null
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {notificationBanner}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -211,7 +229,43 @@ export default function AdminPage() {
                     {user.status}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">{user.email}</p>
+                <p className="text-sm text-gray-500 mb-3">{user.email}</p>
+                
+                {/* Action buttons based on status */}
+                <div className="flex gap-2">
+                  {user.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleApprove(user.id)}
+                        className="flex-1 py-2 px-3 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(user.id)}
+                        className="flex-1 py-2 px-3 bg-red-600 text-white text-sm rounded-lg font-medium hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {user.status === 'approved' && (
+                    <button
+                      onClick={() => handleRevoke(user.id)}
+                      className="flex-1 py-2 px-3 bg-orange-600 text-white text-sm rounded-lg font-medium hover:bg-orange-700"
+                    >
+                      Revoke Access
+                    </button>
+                  )}
+                  {user.status === 'rejected' && (
+                    <button
+                      onClick={() => handleApprove(user.id)}
+                      className="flex-1 py-2 px-3 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700"
+                    >
+                      Re-approve
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

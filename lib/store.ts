@@ -19,6 +19,8 @@ export interface User {
   userType?: 'contractor' | 'homeowner'
   availabilityStatus?: AvailabilityStatus
   lastActiveAt?: string
+  hasSeenApprovalNotification?: boolean
+  lastApprovedAt?: string
 }
 
 export interface Job {
@@ -101,6 +103,85 @@ export function getUserByEmail(email: string): User | undefined {
 
 export function getPendingUsers(): User[] {
   return getUsers().filter(u => u.status === 'pending')
+}
+
+// Approval Functions
+export function approveContractor(userId: string): User | null {
+  const users = getUsers()
+  const user = users.find(u => u.id === userId)
+  if (user) {
+    user.status = 'approved'
+    user.lastApprovedAt = new Date().toISOString()
+    saveUser(user)
+    
+    // Update current user if it's the same user
+    const currentUser = getCurrentUser()
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(user)
+    }
+    
+    return user
+  }
+  return null
+}
+
+export function rejectContractor(userId: string): User | null {
+  const users = getUsers()
+  const user = users.find(u => u.id === userId)
+  if (user) {
+    user.status = 'rejected'
+    saveUser(user)
+    
+    // Update current user if it's the same user
+    const currentUser = getCurrentUser()
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(user)
+    }
+    
+    return user
+  }
+  return null
+}
+
+export function revokeContractor(userId: string): User | null {
+  const users = getUsers()
+  const user = users.find(u => u.id === userId)
+  if (user) {
+    user.status = 'pending' // Reset to pending
+    saveUser(user)
+    
+    // Update current user if it's the same user
+    const currentUser = getCurrentUser()
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(user)
+    }
+    
+    return user
+  }
+  return null
+}
+
+// Check if user was just approved and hasn't seen notification
+export function checkApprovalNotification(user: User): string | null {
+  if (user.status === 'approved' && !user.hasSeenApprovalNotification) {
+    return "🎉 Congratulations! You're approved! You can now access jobs and find work."
+  }
+  return null
+}
+
+// Mark approval notification as seen
+export function markApprovalNotificationSeen(): void {
+  const currentUser = getCurrentUser()
+  if (currentUser) {
+    currentUser.hasSeenApprovalNotification = true
+    setCurrentUser(currentUser)
+    saveUser(currentUser)
+  }
+}
+
+// Get all approved contractors
+export function getApprovedUsers(): User[] {
+  return getUsers().filter(u => u.status === 'approved')
 }
 
 // Availability Status Functions
