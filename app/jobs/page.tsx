@@ -123,6 +123,32 @@ export default function JobsPage() {
     return diffHours > 72 // 3 days = 72 hours
   }
 
+  // Format time remaining until deadline (for urgent jobs with deadline)
+  const formatTimeRemaining = (deadline: number) => {
+    const now = Date.now()
+    const remaining = deadline - now
+    
+    if (remaining <= 0) return 'Expired'
+    
+    const hours = Math.floor(remaining / (1000 * 60 * 60))
+    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (hours > 24) {
+      const days = Math.floor(hours / 24)
+      return `${days}d ${hours % 24}h left`
+    }
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} left`
+    }
+    return `${minutes}m left`
+  }
+
+  // Check if urgent job deadline has passed
+  const isDeadlineExpired = (deadline: number | undefined) => {
+    if (!deadline) return false
+    return Date.now() > deadline
+  }
+
   // Get urgency message
   const getUrgencyMessage = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -230,6 +256,30 @@ export default function JobsPage() {
                         </svg>
                         URGENT
                       </span>
+                    </div>
+                  )}
+
+                  {/* Countdown Timer for urgent jobs with deadline */}
+                  {job.isUrgent && job.urgentResponseDeadline && !isDeadlineExpired(job.urgentResponseDeadline) && (
+                    <div className="mb-3">
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        ⏱️ {formatTimeRemaining(job.urgentResponseDeadline)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Escalation message for expired urgent jobs */}
+                  {job.isUrgent && job.urgentResponseDeadline && isDeadlineExpired(job.urgentResponseDeadline) && (
+                    <div className="mb-3">
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        ⚠️ No responses — try adjusting price or timing
+                      </div>
                     </div>
                   )}
 
