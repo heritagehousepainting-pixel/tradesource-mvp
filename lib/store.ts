@@ -1,5 +1,7 @@
 // localStorage-based data store for MVP
 
+export type AvailabilityStatus = 'available_now' | 'available_today' | 'available_this_week' | 'unavailable'
+
 export interface User {
   id: string
   fullName: string
@@ -15,6 +17,8 @@ export interface User {
   createdAt: string
   passwordHash?: string
   userType?: 'contractor' | 'homeowner'
+  availabilityStatus?: AvailabilityStatus
+  lastActiveAt?: string
 }
 
 export interface Job {
@@ -31,6 +35,8 @@ export interface Job {
   interested: string[]
   createdAt: string
   expiresAt?: string // Optional expiration date for urgency
+  isUrgent?: boolean // Optional for backward compatibility
+  urgentResponseDeadline?: number // timestamp in milliseconds - Optional for backward compatibility
 }
 
 export interface Message {
@@ -53,12 +59,13 @@ const STORAGE_KEYS = {
 
 export interface Notification {
   id: string
-  type: 'job_new' | 'job_expiring' | 'interest_received' | 'message' | 'job_matched'
+  type: 'job_new' | 'job_expiring' | 'interest_received' | 'message' | 'job_matched' | 'urgent_job' | 'selected'
   title: string
   body: string
   jobId?: string
   read: boolean
   createdAt: string
+  userId?: string
 }
 
 // Generate UUID
@@ -96,6 +103,34 @@ export function getPendingUsers(): User[] {
   return getUsers().filter(u => u.status === 'pending')
 }
 
+// Availability Status Functions
+export function setAvailability(userId: string, status: AvailabilityStatus): void {
+  const users = getUsers()
+  const user = users.find(u => u.id === userId)
+  if (user) {
+    user.availabilityStatus = status
+    user.lastActiveAt = new Date().toISOString()
+    saveUser(user)
+    // Update current user session if it's the same user
+    const currentUser = getCurrentUser()
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(user)
+    }
+  }
+}
+
+export function getAvailableContractors(): User[] {
+  return getUsers().filter(u => 
+    u.status === 'approved' && 
+    u.availabilityStatus && 
+    u.availabilityStatus !== 'unavailable'
+  )
+}
+
+export function getContractorsByAvailability(status: AvailabilityStatus): User[] {
+  return getUsers().filter(u => u.status === 'approved' && u.availabilityStatus === status)
+}
+
 // Jobs
 export function getJobs(): Job[] {
   if (typeof window === 'undefined') return []
@@ -119,9 +154,13 @@ export function getJobById(id: string): Job | undefined {
 }
 
 export function getOpenJobs(): Job[] {
-  return getJobs().filter(j => j.status === 'open').sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  return getJobs().filter(j => j.status === 'open').sort((a, b) => {
+    // Urgent jobs first
+    if (a.isUrgent && !b.isUrgent) return -1
+    if (!a.isUrgent && b.isUrgent) return 1
+    // Then by creation date (newest first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
 }
 
 // Messages
@@ -194,6 +233,45 @@ export function markAllNotificationsRead(): void {
 
 export function getUnreadNotificationCount(): number {
   return getNotifications().filter(n => !n.read).length
+}
+
+// New notification functions for Urgency Engine
+export function createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): void {
+  const newNotification: Notification = {
+    ...notification,
+    id: generateId(),
+    createdAt: new Date().toISOString()
+  }
+  saveNotification(newNotification)
+}
+
+export function getNotificationsForUser(userId: string): Notification[] {
+  return getNotifications().filter(n => n.userId === userId)
+}
+
+export function notifyContractorsOfNewJob(job: Job): void {
+  const contractors = getAvailableContractors()
+  contractors.forEach(contractor => {
+    createNotification({
+      userId: contractor.id,
+      type: job.isUrgent ? 'urgent_job' : 'job_new',
+      title: job.isUrgent ? '🚨 Urgent Job Available!' : 'New Job Posted',
+      body: `${job.title} in ${job.location} - $${job.price.toLocaleString()}`,
+      jobId: job.id,
+      read: false
+    })
+  })
+}
+
+export function notifyContractorSelected(contractorId: string, job: Job): void {
+  createNotification({
+    userId: contractorId,
+    type: 'selected',
+    title: 'You were selected!',
+    body: `You were selected for "${job.title}" - $${job.price.toLocaleString()}`,
+    jobId: job.id,
+    read: false
+  })
 }
 
 // Activity Tracking for Habit Formation

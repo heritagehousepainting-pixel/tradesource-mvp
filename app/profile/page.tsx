@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, getJobs, User, Job } from '@/lib/store'
+import { getCurrentUser, getJobs, saveUser, setAvailability, User, Job, AvailabilityStatus } from '@/lib/store'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -111,6 +111,55 @@ export default function ProfilePage() {
               <p className="text-xs text-gray-500 mb-1">Member Since</p>
               <p className="font-semibold">{formatDate(user.createdAt)}</p>
             </div>
+          </div>
+        </div>
+
+        {/* Availability Status */}
+        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Availability Status</h3>
+          <p className="text-sm text-gray-500 mb-4">Let other contractors know when you're available for work</p>
+          
+          <div className="space-y-3">
+            {(['available_now', 'available_today', 'available_this_week', 'unavailable'] as AvailabilityStatus[]).map((status) => (
+              <button
+                key={status}
+                onClick={() => {
+                  setAvailability(user.id, status)
+                  setUser({ ...user, availabilityStatus: status })
+                }}
+                className={`w-full p-3 rounded-lg border-2 flex items-center gap-3 transition-colors ${
+                  user.availabilityStatus === status 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className={`w-3 h-3 rounded-full ${
+                  status === 'available_now' ? 'bg-green-500' :
+                  status === 'available_today' ? 'bg-yellow-500' :
+                  status === 'available_this_week' ? 'bg-blue-500' :
+                  'bg-gray-400'
+                }`}></div>
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">
+                    {status === 'available_now' ? 'Available Now' :
+                     status === 'available_today' ? 'Available Today' :
+                     status === 'available_this_week' ? 'Available This Week' :
+                     'Unavailable'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {status === 'available_now' ? 'Ready to start immediately' :
+                     status === 'available_today' ? 'Can start within today' :
+                     status === 'available_this_week' ? 'Can start within the week' :
+                     'Not looking for work'}
+                  </p>
+                </div>
+                {user.availabilityStatus === status && (
+                  <svg className="w-5 h-5 text-green-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, saveJob, Job, User, generateId } from '@/lib/store'
+import { getCurrentUser, saveJob, Job, User, generateId, notifyContractorsOfNewJob } from '@/lib/store'
 
 // Surface detection hook for responsive layout
 function useSurface() {
@@ -41,7 +41,8 @@ export default function PostJobPage() {
     description: '',
     price: '',
     location: '',
-    timing: ''
+    timing: '',
+    isUrgent: false
   })
 
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function PostJobPage() {
     setIsSubmitting(true)
 
     try {
+      const now = Date.now()
       const job: Job = {
         id: generateId(),
         posterId: user.id,
@@ -115,10 +117,16 @@ export default function PostJobPage() {
         timing: formData.timing,
         status: 'open',
         interested: [],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        isUrgent: formData.isUrgent,
+        urgentResponseDeadline: formData.isUrgent ? now + 15 * 60 * 1000 : undefined // 15 minutes
       }
 
       saveJob(job)
+      
+      // Notify contractors about new job
+      notifyContractorsOfNewJob(job)
+      
       router.push('/jobs')
     } catch (error) {
       console.error('Error posting job:', error)
@@ -209,6 +217,39 @@ export default function PostJobPage() {
                 placeholder="e.g., This week, Flexible"
               />
               {errors.timing && <p className="text-red-600 text-sm mt-1">{errors.timing}</p>}
+            </div>
+
+            {/* Urgent Toggle */}
+            <div className={`p-4 rounded-lg border-2 ${formData.isUrgent ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">URGENT — Need help ASAP</p>
+                    <p className="text-sm text-gray-500">Contractors will see this prioritized</p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={formData.isUrgent}
+                    onChange={e => setFormData({ ...formData, isUrgent: e.target.checked })}
+                    className="sr-only"
+                  />
+                  <div className={`w-12 h-6 rounded-full transition-colors ${formData.isUrgent ? 'bg-red-600' : 'bg-gray-300'}`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform mt-0.5 ${formData.isUrgent ? 'translate-x-6 ml-0.5' : 'translate-x-0.5'}`}></div>
+                  </div>
+                </div>
+              </label>
+              {formData.isUrgent && (
+                <p className="mt-2 text-sm text-red-600">
+                  ⚡ Responses expected within 15 minutes
+                </p>
+              )}
             </div>
 
             {/* Description */}

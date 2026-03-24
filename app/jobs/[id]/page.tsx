@@ -4,6 +4,19 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { getCurrentUser, getJobById, saveJob, Job, User } from '@/lib/store'
 
+// Helper function to format time remaining
+function formatTimeRemaining(deadline: number): string {
+  const now = Date.now()
+  const diff = deadline - now
+  
+  if (diff <= 0) return 'Expired'
+  
+  const minutes = Math.floor(diff / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
 export default function JobDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -11,6 +24,7 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
   const [interested, setInterested] = useState(false)
+  const [timeRemaining, setTimeRemaining] = useState<string>('')
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -35,8 +49,31 @@ export default function JobDetailPage() {
 
     setJob(foundJob)
     setInterested(foundJob.interested.includes(currentUser.id))
+    
+    // Set initial time remaining for urgent jobs
+    if (foundJob.isUrgent && foundJob.urgentResponseDeadline) {
+      setTimeRemaining(formatTimeRemaining(foundJob.urgentResponseDeadline))
+    }
+    
     setLoading(false)
   }, [router, params.id])
+
+  // Timer effect for urgent jobs
+  useEffect(() => {
+    if (!job || !job.isUrgent || !job.urgentResponseDeadline) return
+    
+    const interval = setInterval(() => {
+      const remaining = formatTimeRemaining(job.urgentResponseDeadline!)
+      setTimeRemaining(remaining)
+      
+      // Clear interval when expired
+      if (remaining === 'Expired') {
+        clearInterval(interval)
+      }
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [job?.isUrgent, job?.urgentResponseDeadline])
 
   const handleInterest = () => {
     if (!job || !user) return
@@ -113,6 +150,22 @@ export default function JobDetailPage() {
               <p className="text-sm text-gray-500">{job.posterBusiness}</p>
             </div>
           </div>
+
+          {/* Urgent Banner */}
+          {job.isUrgent && (
+            <div className="mb-6 p-4 bg-red-600 text-white rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-semibold">URGENT</span>
+              </div>
+              <div className="text-right">
+                <span className="text-sm">Responses expected within</span>
+                <p className="text-xl font-bold">{timeRemaining || 'calculating...'}</p>
+              </div>
+            </div>
+          )}
 
           {/* Job details */}
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{job.title}</h2>

@@ -1,79 +1,192 @@
-# TradeSource Fix Report
+# FIX_REPORT.md - URGENCY ENGINE Implementation
 
 ## Summary
-Fixed two critical issues in TradeSource MVP.
+Implemented the URGENCY ENGINE for TradeSource to transform the platform from a passive job board to an active urgency-driven matching system.
 
 ---
 
-## Issue 1: Price Blurring - User Never Sees It ✅
+## 1. CONTRACTOR AVAILABILITY STATUS ✅
 
-### Problem
-- Code existed in jobs/page.tsx to blur prices for non-approved users
-- But non-approved users were redirected to /pending before seeing any jobs
-- Result: No user ever saw the blurred prices
+### Changes to `lib/store.ts`:
+- Added `AvailabilityStatus` type: `'available_now' | 'available_today' | 'available_this_week' | 'unavailable'`
+- Extended `User` interface with:
+  - `availabilityStatus?: AvailabilityStatus`
+  - `lastActiveAt?: string`
 
-### Fix Applied
-**Files Modified:** `app/jobs/page.tsx`
+### New Functions:
+- `setAvailability(userId: string, status: AvailabilityStatus): void` - Saves availability and updates lastActiveAt
+- `getAvailableContractors(): User[]` - Returns contractors with availability set (not 'unavailable')
+- `getContractorsByAvailability(status: AvailabilityStatus): User[]` - Returns contractors with specific status
 
-1. **Removed redirect to /pending** - Non-approved (pending/rejected) users can now view the jobs feed
-2. **Added upgrade message banner** - Displayed at top of jobs page for non-approved users explaining they need to verify to see prices and apply
-3. **Price blurring preserved** - Non-approved users still see blurred prices (`$_,___`) while approved users see actual prices
-
-### Verification Steps
-1. Create a new contractor account (goes to pending status by default) 
-2. Navigate to /jobs
-3. Verify you can see the jobs feed (not redirected to /pending)
-4. Verify prices show as `$_,___` (blurred)
-5. Verify upgrade message appears at top
-
----
-
-## Issue 2: Password Flow - Email-Only Not Acceptable ✅
-
-### Problem
-- Login only checked email, no password validation
-- createHomeownerAccount ignored the password parameter
-- Not real authentication
-
-### Fix Applied
-**Files Modified:** `lib/store.ts`, `app/login/page.tsx`
-
-#### lib/store.ts
-1. Added `hashPassword()` function - simple base64 encoding (MVP - use bcrypt in production)
-2. Added `validatePassword()` function - compares password against stored hash
-3. Updated `createHomeownerAccount()` - now saves `passwordHash` field
-4. Added `loginWithCredentials()` function - validates email + password
-
-#### app/login/page.tsx
-1. Added password input field to login form
-2. Updated form submission to validate credentials
-3. Handles three cases:
-   - User exists with password hash → validate password
-   - Legacy user without password → allow login (for demo)
-   - No user found → show error message
-
-### Verification Steps
-1. Go to /signup
-2. Create account with password (e.g., "testpassword123")
-3. Log out
-4. Go to /login
-5. Enter email + **wrong** password → should show "Invalid email or password"
-6. Enter email + **correct** password → should successfully login
+### UI Updates (`app/profile/page.tsx`):
+- Added availability selector section in contractor profile
+- Four options with visual indicators (green/yellow/blue/gray dots)
+- Status labels:
+  - **Available Now** - "Ready to start immediately"
+  - **Available Today** - "Can start within today"
+  - **Available This Week** - "Can start within the week"
+  - **Unavailable** - "Not looking for work"
+- Clicking a status option updates the user's availability via `setAvailability()`
 
 ---
 
-## Files Modified
+## 2. URGENT JOB MODE ✅
 
-| File | Changes |
-|------|---------|
-| `lib/store.ts` | Added hashPassword, validatePassword, loginWithCredentials functions; updated createHomeownerAccount to save passwordHash |
-| `app/jobs/page.tsx` | Removed /pending redirect; added upgrade banner for non-approved users |
-| `app/login/page.tsx` | Added password field; updated login logic with password validation |
+### Changes to `lib/store.ts`:
+- Extended `Job` interface with:
+  - `isUrgent?: boolean` (optional for backward compatibility)
+  - `urgentResponseDeadline?: number` (timestamp in milliseconds)
+
+### Changes to `app/post-job/page.tsx`:
+- Added `isUrgent` field to form state
+- Added "URGENT — Need help ASAP" toggle in the job form
+- When enabled:
+  - Shows expected response time: "Responses expected within 15 minutes"
+  - Sets `urgentResponseDeadline` to `now + 15 minutes` (15 * 60 * 1000 ms)
+- Toggle styled with red accent when active
+- Calls `notifyContractorsOfNewJob(job)` after saving to notify contractors
 
 ---
 
-## Test Results
+## 3. RESPONSE TIMER ✅
 
-Both issues have been addressed:
-- ✅ Non-approved users can now see jobs with blurred prices
-- ✅ Password authentication now works (email + password required)
+### Changes to `app/jobs/[id]/page.tsx`:
+- Added `formatTimeRemaining()` helper function
+- Added `timeRemaining` state for countdown display
+- Added `useEffect` that runs interval every 1 second for urgent jobs
+- Displays countdown in "M:SS" format (minutes:seconds)
+
+### UI Display:
+- When `job.isUrgent` is true, shows red banner:
+  ```
+  ┌─────────────────────────────────────┐
+  │ ⚠️ URGENT                           │
+  │ Responses expected within  12:45   │
+  └─────────────────────────────────────┘
+  ```
+- Timer updates every second
+- Shows "Expired" when deadline passes
+
+---
+
+## 4. NOTIFICATION SYSTEM (MVP) ✅
+
+### Changes to `lib/store.ts`:
+- Extended `Notification` interface with:
+  - Added `urgent_job` and `selected` types
+  - Added `userId?: string` field
+- Added new functions:
+  - `createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): void`
+  - `getNotificationsForUser(userId: string): Notification[]`
+  - `notifyContractorsOfNewJob(job: Job): void` - Notifies all available contractors
+  - `notifyContractorSelected(contractorId: string, job: Job): void` - Notifies selected contractor
+
+### Notification Triggers:
+- **New job posted** → Notifies all contractors with availability set
+- **Urgent job posted** → Uses `urgent_job` type, prioritized notification
+- Notification includes job title, location, and price
+
+### UI Updates (`app/jobs/page.tsx`):
+- Added notification bell icon in header
+- Shows unread count badge (red circle with number, max "9+")
+- Added import for `getUnreadNotificationCount`
+
+---
+
+## 5. PRIORITY MATCHING ✅
+
+### Changes to `lib/store.ts`:
+- Updated `getOpenJobs()` to sort:
+  1. Urgent jobs first (`isUrgent: true` sorted to top)
+  2. Then by creation date (newest first)
+
+### Changes to `app/jobs/page.tsx`:
+- Added URGENT badge display on job cards:
+  - Red "URGENT" pill badge with icon
+  - Left border highlight (red)
+- Added availability indicator:
+  - Shows "Available now" badge if any interested contractor has `availabilityStatus === 'available_now'`
+  - Uses green color scheme to indicate immediate availability
+- Priority logic:
+  - Jobs with `isUrgent: true` appear at top of feed
+  - Jobs with available_now contractors show special badge
+
+---
+
+## 6. NON-APPROVED EXPERIENCE ✅
+
+### Maintained Functionality:
+- **Price blurring**: Non-approved users see blurred prices (`$_,___`)
+- **Upgrade path banner**: Shows "Your application is pending approval" or "Your application was not approved" with link to update
+- **Access maintained**: Non-approved users can view jobs, but prices remain blurred
+
+### Implementation in `app/jobs/page.tsx`:
+```tsx
+const formatPrice = (price: number, userStatus: string) => {
+  if (userStatus !== 'approved') {
+    return (
+      <span className="blur-sm select-none text-gray-400">
+        $_,___
+      </span>
+    )
+  }
+  return new Intl.NumberFormat('en-US', { ... }).format(price)
+}
+```
+
+---
+
+## FILES MODIFIED
+
+1. **`lib/store.ts`**
+   - Added AvailabilityStatus type
+   - Extended User interface with availabilityStatus, lastActiveAt
+   - Extended Job interface with isUrgent, urgentResponseDeadline
+   - Extended Notification interface with userId, new types
+   - Added setAvailability, getAvailableContractors, getContractorsByAvailability
+   - Added createNotification, getNotificationsForUser, notifyContractorsOfNewJob
+   - Updated getOpenJobs for urgent-first sorting
+
+2. **`app/jobs/page.tsx`**
+   - Added notification import and state
+   - Added urgent badge display
+   - Added availability badge for contractors
+   - Added notification bell in header
+
+3. **`app/post-job/page.tsx`**
+   - Added isUrgent to form state
+   - Added urgent toggle UI
+   - Added notifyContractorsOfNewJob call on submit
+   - Sets 15-minute deadline for urgent jobs
+
+4. **`app/profile/page.tsx`**
+   - Added availability selector with 4 status options
+   - Visual feedback when status is selected
+
+5. **`app/jobs/[id]/page.tsx`**
+   - Added formatTimeRemaining helper
+   - Added timeRemaining state
+   - Added useEffect timer for urgent jobs
+   - Added urgent banner with countdown display
+
+6. **`app/layout.tsx`** 
+   - (No changes needed - seed data handles backward compatibility via optional fields)
+
+---
+
+## VALIDATION RESULTS
+
+1. ✅ **Contractor sets availability** → Check store: availabilityStatus saved to User in localStorage
+2. ✅ **User posts urgent job** → Job has isUrgent=true, urgentResponseDeadline set to now + 15 min
+3. ✅ **Timer displays** → Countdown shows on job detail page, updates every second
+4. ✅ **Notifications appear** → Bell icon shows unread count, notifications stored in localStorage
+5. ✅ **Jobs feed prioritizes** → Urgent jobs sorted to top, availability badges shown on contractor cards
+
+---
+
+## BACKWARD COMPATIBILITY
+
+- `isUrgent` and `urgentResponseDeadline` are optional in Job interface
+- Old jobs without these fields default to non-urgent behavior
+- Price blurring maintained for non-approved users
+- All existing seed data works without migration

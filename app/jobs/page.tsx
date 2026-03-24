@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, getOpenJobs, Job, User } from '@/lib/store'
+import { getCurrentUser, getOpenJobs, getUserById, getUnreadNotificationCount, Job, User } from '@/lib/store'
 
 // Surface detection hook for responsive layout
 function useSurface() {
@@ -34,6 +34,7 @@ export default function JobsPage() {
   const [user, setUser] = useState<User | null>(null)
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -45,6 +46,7 @@ export default function JobsPage() {
     // Allow non-approved users to view jobs with blurred prices
     // Removed: if (currentUser.status !== 'approved') { router.push('/pending'); return }
     setJobs(getOpenJobs())
+    setUnreadCount(getUnreadNotificationCount())
     setLoading(false)
   }, [router])
 
@@ -154,7 +156,18 @@ export default function JobsPage() {
               </svg>
             </button>
             <h1 className="text-xl font-bold text-gray-900">Find Work</h1>
-            <div className="w-10"></div>
+            <div className="relative">
+              <button className="p-2 text-gray-500 hover:text-gray-700">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </button>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -201,13 +214,25 @@ export default function JobsPage() {
           <div className={getGridClass()}>
             {jobs.map(job => {
               const urgency = getUrgencyMessage(job.createdAt)
-              const urgent = isJobUrgent(job.createdAt)
+              const urgent = job.isUrgent || isJobUrgent(job.createdAt)
               return (
                 <button
                   key={job.id}
                   onClick={() => router.push(`/jobs/${job.id}`)}
                   className={`job-card w-full text-left p-4 ${urgent ? 'border-l-4 border-l-red-500' : ''}`}
                 >
+                  {/* Urgent Badge */}
+                  {job.isUrgent && (
+                    <div className="mb-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs font-semibold rounded-full">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        URGENT
+                      </span>
+                    </div>
+                  )}
+
                   {/* Trust indicators */}
                   <div className="flex items-center gap-2 mb-3">
                     <span className="trust-badge">
@@ -252,12 +277,24 @@ export default function JobsPage() {
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <span className="text-xs text-gray-400">{formatDate(job.createdAt)}</span>
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-                    </svg>
-                    {job.interested.length} interested
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* Availability indicator for contractors */}
+                    {job.interested.length > 0 && job.interested.slice(0, 3).some((id: string) => {
+                      const contractor = getUserById(id)
+                      return contractor?.availabilityStatus === 'available_now'
+                    }) && (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                        Available now
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                      </svg>
+                      {job.interested.length} interested
+                    </span>
+                  </div>
                 </div>
               </button>
             )})}
