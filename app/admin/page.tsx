@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, getPendingUsers, saveUser, User, approveContractor, rejectContractor, revokeContractor } from '@/lib/store'
+import { getUsers, getPendingUsers, saveUser, User, approveContractor, rejectContractor, revokeContractor, getUserDocuments, UserDocuments } from '@/lib/store'
 
 // Simple admin code for MVP
 const ADMIN_CODE = 'TSADMIN2024'
@@ -16,6 +16,8 @@ export default function AdminPage() {
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [activeTab, setActiveTab] = useState<'vetting' | 'users'>('vetting')
   const [notification, setNotification] = useState<string | null>(null)
+  const [expandedUser, setExpandedUser] = useState<string | null>(null)
+  const [viewingDocument, setViewingDocument] = useState<{ name: string; data: string } | null>(null)
 
   const loadUsers = () => {
     setPendingUsers(getPendingUsers())
@@ -72,6 +74,101 @@ export default function AdminPage() {
       minute: '2-digit'
     })
   }
+
+  const getUserDocStatus = (user: User): UserDocuments => {
+    // First check new documents field
+    if (user.documents) {
+      return user.documents
+    }
+    // Fall back to legacy fields
+    const docs: UserDocuments = {}
+    if (user.w9Data) {
+      docs.w9 = { name: 'W-9 Document', data: user.w9Data, uploadedAt: user.createdAt }
+    }
+    if (user.insuranceData) {
+      docs.insurance = { name: 'Insurance Document', data: user.insuranceData, uploadedAt: user.createdAt }
+    }
+    return docs
+  }
+
+  const hasDocuments = (user: User): boolean => {
+    const docs = getUserDocStatus(user)
+    return !!(docs.insurance || docs.w9 || docs.license)
+  }
+
+  const renderDocumentStatus = (user: User) => {
+    const docs = getUserDocStatus(user)
+    const docTypes = [
+      { key: 'insurance' as const, label: 'Insurance' },
+      { key: 'w9' as const, label: 'W-9' },
+      { key: 'license' as const, label: 'License' }
+    ]
+    
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <p className="text-sm font-medium text-gray-700 mb-2">Documents:</p>
+        <div className="space-y-2">
+          {docTypes.map(({ key, label }) => (
+            <div key={key} className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">{label}:</span>
+              {docs[key] ? (
+                <button
+                  onClick={() => setViewingDocument({ name: docs[key]!.name, data: docs[key]!.data })}
+                  className="text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  Uploaded ({docs[key]!.name})
+                </button>
+              ) : (
+                <span className="text-gray-400">Not submitted</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Document viewer modal
+  const documentViewerModal = viewingDocument ? (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setViewingDocument(null)}>
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">{viewingDocument.name}</h3>
+          <button onClick={() => setViewingDocument(null)} className="text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-4">
+          {viewingDocument.data.startsWith('data:application/pdf') ? (
+            <iframe
+              src={viewingDocument.data}
+              className="w-full h-[70vh] border-0"
+              title="Document viewer"
+            />
+          ) : viewingDocument.data.startsWith('data:image') ? (
+            <img src={viewingDocument.data} alt={viewingDocument.name} className="max-w-full h-auto" />
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Document cannot be previewed</p>
+              <a href={viewingDocument.data} download={viewingDocument.name} className="mt-2 inline-block text-blue-600 hover:underline">
+                Download Document
+              </a>
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-200 flex gap-2">
+          <a href={viewingDocument.data} download={viewingDocument.name} className="flex-1 py-2 px-4 bg-gray-900 text-white text-center rounded-lg font-medium hover:bg-gray-800">
+            Download
+          </a>
+          <button onClick={() => setViewingDocument(null)} className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
 
   if (!isAuthenticated) {
     return (
@@ -171,7 +268,9 @@ export default function AdminPage() {
                 <p className="text-gray-500">No pending applications</p>
               </div>
             ) : (
-              pendingUsers.map(user => (
+              pendingUsers.map(user => {
+                const userHasDocuments = hasDocuments(user)
+                return (
                 <div key={user.id} className="bg-white rounded-xl p-4 shadow-sm">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -192,7 +291,19 @@ export default function AdminPage() {
                     <p><span className="text-gray-500">Applied:</span> {formatDate(user.createdAt)}</p>
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Document Status */}
+                  {renderDocumentStatus(user)}
+                  
+                  {/* Warning for no documents */}
+                  {!userHasDocuments && (
+                    <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm text-orange-800">
+                        ⚠️ No documents submitted - verify manually before approving
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 mt-4">
                     <button
                       onClick={() => handleApprove(user.id)}
                       className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
@@ -207,7 +318,7 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-              ))
+              )})
             )}
           </div>
         )}
@@ -266,11 +377,15 @@ export default function AdminPage() {
                     </button>
                   )}
                 </div>
+                
+                {/* Documents for All Users */}
+                {renderDocumentStatus(user)}
               </div>
             ))}
           </div>
         )}
       </main>
+      {documentViewerModal}
     </div>
   )
 }

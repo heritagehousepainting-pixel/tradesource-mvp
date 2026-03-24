@@ -2,6 +2,18 @@
 
 export type AvailabilityStatus = 'available_now' | 'available_today' | 'available_this_week' | 'unavailable'
 
+export interface UserDocument {
+  name: string
+  data: string
+  uploadedAt: string
+}
+
+export interface UserDocuments {
+  insurance?: UserDocument
+  w9?: UserDocument
+  license?: UserDocument
+}
+
 export interface User {
   id: string
   fullName: string
@@ -21,6 +33,7 @@ export interface User {
   lastActiveAt?: string
   hasSeenApprovalNotification?: boolean
   lastApprovedAt?: string
+  documents?: UserDocuments
 }
 
 export interface Job {
@@ -182,6 +195,34 @@ export function markApprovalNotificationSeen(): void {
 // Get all approved contractors
 export function getApprovedUsers(): User[] {
   return getUsers().filter(u => u.status === 'approved')
+}
+
+// Document Management Functions
+export function saveDocument(userId: string, docType: 'insurance' | 'w9' | 'license', fileData: string, fileName: string): void {
+  const users = getUsers()
+  const user = users.find(u => u.id === userId)
+  if (user) {
+    if (!user.documents) {
+      user.documents = {}
+    }
+    user.documents[docType] = {
+      name: fileName,
+      data: fileData,
+      uploadedAt: new Date().toISOString()
+    }
+    // Also update legacy fields for backward compatibility
+    if (docType === 'w9') {
+      user.w9Data = fileData
+    } else if (docType === 'insurance') {
+      user.insuranceData = fileData
+    }
+    saveUser(user)
+  }
+}
+
+export function getUserDocuments(userId: string): UserDocuments {
+  const user = getUserById(userId)
+  return user?.documents || {}
 }
 
 // Availability Status Functions

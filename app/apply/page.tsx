@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { saveUser, setCurrentUser, generateId, User } from '@/lib/store'
+import { saveUser, setCurrentUser, generateId, User, saveDocument } from '@/lib/store'
 
 export default function Apply() {
   const router = useRouter()
@@ -17,7 +17,8 @@ export default function Apply() {
     yearsExperience: '',
     reviewLink: '',
     w9File: null as File | null,
-    insuranceFile: null as File | null
+    insuranceFile: null as File | null,
+    licenseFile: null as File | null
   })
 
   const validate = (): boolean => {
@@ -43,7 +44,7 @@ export default function Apply() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'w9File' | 'insuranceFile') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'w9File' | 'insuranceFile' | 'licenseFile') => {
     const file = e.target.files?.[0]
     if (file) {
       setFormData({ ...formData, [field]: file })
@@ -60,6 +61,7 @@ export default function Apply() {
       // Convert files to base64
       const w9Data = formData.w9File ? await readFileAsDataURL(formData.w9File) : null
       const insuranceData = formData.insuranceFile ? await readFileAsDataURL(formData.insuranceFile) : null
+      const licenseData = formData.licenseFile ? await readFileAsDataURL(formData.licenseFile) : null
 
       const user: User = {
         id: generateId(),
@@ -77,7 +79,20 @@ export default function Apply() {
       }
 
       saveUser(user)
-      setCurrentUser(user)
+      
+      // Save documents using the new document management system
+      if (formData.w9File && w9Data) {
+        saveDocument(user.id, 'w9', w9Data, formData.w9File.name)
+      }
+      if (formData.insuranceFile && insuranceData) {
+        saveDocument(user.id, 'insurance', insuranceData, formData.insuranceFile.name)
+      }
+      if (formData.licenseFile && licenseData) {
+        saveDocument(user.id, 'license', licenseData, formData.licenseFile.name)
+      }
+      
+      // Refresh user data with documents
+      setCurrentUser({ ...user, documents: { w9: formData.w9File ? { name: formData.w9File.name, data: w9Data!, uploadedAt: new Date().toISOString() } : undefined, insurance: formData.insuranceFile ? { name: formData.insuranceFile.name, data: insuranceData!, uploadedAt: new Date().toISOString() } : undefined, license: formData.licenseFile ? { name: formData.licenseFile.name, data: licenseData!, uploadedAt: new Date().toISOString() } : undefined } })
       router.push('/pending')
     } catch (error) {
       console.error('Error submitting application:', error)
@@ -234,6 +249,17 @@ export default function Apply() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-900 file:text-white file:cursor-pointer"
               />
               {errors.insuranceFile && <p className="text-red-600 text-sm mt-1">{errors.insuranceFile}</p>}
+            </div>
+
+            {/* License Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business License (PDF)</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.png"
+                onChange={e => handleFileChange(e, 'licenseFile')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-900 file:text-white file:cursor-pointer"
+              />
             </div>
 
             {errors.submit && (

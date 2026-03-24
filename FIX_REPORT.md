@@ -1,96 +1,156 @@
-# FIX_REPORT - Admin + Approval Flow Fixes
+# FIX_REPORT - Document Visibility Gap Fix
 
 ## Date: 2026-03-24
 
+## PROBLEM STATEMENT
+
+Admin cannot view uploaded documents (insurance, W9, license) submitted by contractors during application. This makes the "vetted network" claim invalid.
+
+---
+
 ## PROBLEMS FIXED
 
-### 1. Admin Has No Post-Approval Control ✅ FIXED
+### 1. Admin Has No Post-Approval Control ✅ FIXED (Prior Fix)
 - **Before:** Admin could only approve or reject, no way to revoke or manage approved contractors
 - **After:** Added full CRUD controls to admin panel with Approve, Reject, Revoke buttons per user status
 - **Implementation:** Updated `app/admin/page.tsx` with action buttons that change based on user status
 
-### 2. Approval State Not Propagating ✅ FIXED
+### 2. Approval State Not Propagating ✅ FIXED (Prior Fix)
 - **Before:** Admin approves contractor → contractor still sees "Application Under Review"
 - **After:** Admin action immediately updates user status in store and current user session
 - **Implementation:** New functions in `lib/store.ts`: `approveContractor()`, `rejectContractor()`, `revokeContractor()`
 
-### 3. No Approval Notification ✅ FIXED
+### 3. No Approval Notification ✅ FIXED (Prior Fix)
 - **Before:** No feedback after admin approval - user had to manually check
 - **After:** Shows in-app notification when user logs in after being approved
 - **Implementation:** New functions `checkApprovalNotification()` and `markApprovalNotificationSeen()` in store, integrated into login flow
 
-### 4. No State Transition ✅ FIXED
+### 4. No State Transition ✅ FIXED (Prior Fix)
 - **Before:** User stuck in pending state forever
 - **After:** Proper lifecycle: pending → approved → active, with polling on pending/rejected pages
 - **Implementation:** Pages now poll every 5 seconds to check for status changes
+
+### 5. Document Visibility Gap ✅ FIXED (NEW)
+- **Before:** Admin cannot view uploaded documents (insurance, W9, license) submitted by contractors
+- **After:** Admin can view document status, see uploaded documents, and download/view them before approval
+- **Implementation:** New document management system in store + document viewing UI in admin panel
 
 ---
 
 ## IMPLEMENTATIONS COMPLETED
 
-### 1. Admin Control Panel (`app/admin/page.tsx`)
-- Shows all contractors in table/grid
-- Each contractor displays: name, business, email, status
-- Dynamic action buttons:
-  - **Pending:** Approve, Reject
-  - **Approved:** Revoke Access
-  - **Rejected:** Re-approve
-- Real-time feedback notification on actions (toast banner)
-- Uses new store functions for state management
+### 1. Document Storage System (`lib/store.ts`)
 
-### 2. Real User Status System (`lib/store.ts`)
-Added new functions:
+Added new interfaces and functions:
+
 ```typescript
-type UserStatus = 'pending' | 'approved' | 'rejected'
+// New document interface
+export interface UserDocument {
+  name: string
+  data: string
+  uploadedAt: string
+}
 
-// Approval workflow functions
-approveContractor(userId: string) → User | null
-rejectContractor(userId: string) → User | null  
-revokeContractor(userId: string) → User | null
+export interface UserDocuments {
+  insurance?: UserDocument
+  w9?: UserDocument
+  license?: UserDocument
+}
 
-// Notification functions
-checkApprovalNotification(user: User): string | null
-markApprovalNotificationSeen(): void
+// Extended User interface (added documents field)
+export interface User {
+  ...
+  documents?: UserDocuments
+}
+
+// Document management functions
+export function saveDocument(
+  userId: string, 
+  docType: 'insurance' | 'w9' | 'license', 
+  fileData: string, 
+  fileName: string
+): void
+
+export function getUserDocuments(userId: string): UserDocuments
 ```
 
-Added new User interface fields:
-- `hasSeenApprovalNotification?: boolean`
-- `lastApprovedAt?: string`
+Also maintains backward compatibility with legacy `w9Data` and `insuranceData` fields.
 
-### 3. Post-Approval Experience
-- Login page checks approval status and shows notification on first login after approval
-- Home page (`app/page.tsx`) routes to `/pending` or `/rejected` based on status
-- Pending and Rejected pages poll for status changes every 5 seconds
+### 2. Contractor Application (`app/apply/page.tsx`)
 
-### 4. Notification on Approval
-- Login page shows green banner with approval message: "🎉 Congratulations! You're approved!"
-- Notification only shows once (tracked via `hasSeenApprovalNotification` flag)
-- Message: "You can now access jobs and find work"
+Extended form to include:
+- **W-9 Upload** (existing)
+- **Insurance Upload** (existing)
+- **Business License Upload** (NEW)
 
-### 5. State Recheck on Load
-- Pending page: polls every 5s for status change to approved/rejected
-- Rejected page: polls every 5s for potential re-approval
-- Auto-redirects when status changes
+Updated submit handler to:
+- Save documents using new `saveDocument()` function
+- Store document metadata (name, data, uploadedAt) in structured format
+- Also maintain legacy fields for backward compatibility
+
+### 3. Admin Document View (`app/admin/page.tsx`)
+
+New features added:
+- **Document Status Display:** Shows status (Uploaded/Not submitted) for each document type
+- **Document Viewer Modal:** Click to view or download uploaded documents
+- **Warning Banner:** Shows warning when no documents are submitted before approval
+- **All Users Tab:** Documents visible for all users (not just pending)
+
+UI structure per contractor:
+```
+[Contractor Name]
+...
+Documents:
+  - Insurance: Uploaded (view) / Not submitted
+  - W-9: Uploaded (view) / Not submitted
+  - License: Uploaded (view) / Not submitted
+
+⚠️ No documents submitted - verify manually before approving
+```
+
+### 4. Approval Requires Review
+
+Before showing "Approve" button:
+- Display document status for each document type
+- If no documents uploaded, show warning: "No documents submitted - verify manually before approving"
+
+### 5. Profile Integration
+
+After approval:
+- Documents remain linked to contractor
+- Admin can always view documents from All Users list
 
 ---
 
-## FILES MODIFIED/CREATED
+## FILES MODIFIED
 
-1. **`lib/store.ts`** - Added approval functions, notification logic, new User fields
-2. **`app/login/page.tsx`** - Added approval notification check on login
-3. **`app/admin/page.tsx`** - Full admin control panel with action buttons + notification toasts
-4. **`app/rejected/page.tsx`** - Created new page for rejected users
+1. **`lib/store.ts`**
+   - Added `UserDocument` and `UserDocuments` interfaces
+   - Extended `User` interface with `documents` field
+   - Added `saveDocument()` and `getUserDocuments()` functions
+
+2. **`app/apply/page.tsx`**
+   - Added `licenseFile` to form state
+   - Added license file upload input
+   - Updated submit handler to save documents using new system
+
+3. **`app/admin/page.tsx`**
+   - Added document status checking functions
+   - Added document viewer modal
+   - Updated pending users card to show documents
+   - Added warning banner for missing documents
 
 ---
 
 ## VALIDATION CHECKLIST
 
 | Requirement | Status |
-|------------|--------|
-| Admin sees list of all contractors with status | ✅ Implemented |
-| Admin can approve contractor → status changes in store | ✅ Implemented |
-| Approved contractor logs in → sees jobs (not pending) | ✅ Implemented |
-| Admin can revoke → contractor loses access | ✅ Implemented |
+|-------------|--------|
+| Contractor can upload document during application | ✅ Implemented |
+| File is stored in localStorage | ✅ Implemented (base64) |
+| Admin can see document status before approving | ✅ Implemented |
+| Admin can view/download document | ✅ Implemented (modal) |
+| Documents persist after approval | ✅ Implemented |
 
 ---
 
@@ -98,17 +158,31 @@ Added new User interface fields:
 
 - All pages build successfully (`npm run build` passes)
 - Static generation works for all 15 routes
-- Admin code: `TSADMIN2024` (existing)
-- Seed data includes 12 approved contractors for demo
+- Admin code: `TSADMIN2024`
+- Document viewer supports PDF and images
+- Backward compatible with existing user data (w9Data/insuranceData fields)
 
 ---
 
 ## USAGE FLOW
 
-1. **Admin logs in** at `/admin` with code `TSADMIN2024`
-2. **Admin views** all users in "All Users" tab
-3. **Admin clicks** Approve/Reject/Revoke based on need
-4. **User logs in** and sees:
-   - If just approved: Green notification banner + access to jobs
-   - If pending: Redirected to `/pending` with polling
-   - If rejected: Redirected to `/rejected` with support info
+### Contractor Application
+1. Navigate to `/apply`
+2. Fill out business information
+3. Upload required documents (W-9, Insurance, License)
+4. Submit application
+5. Status: Pending (waiting for admin review)
+
+### Admin Review
+1. Navigate to `/admin` and enter code `TSADMIN2024`
+2. Go to "Vetting" tab to see pending applications
+3. Review contractor details AND uploaded documents
+4. If documents missing → warning shown, verify manually
+5. If documents present → click to view in modal
+6. Click Approve or Reject
+
+### After Approval
+1. Contractor logs in
+2. Sees approval notification: "🎉 Congratulations! You're approved!"
+3. Can access all jobs with documents still linked to profile
+4. Admin can view documents anytime from All Users tab
