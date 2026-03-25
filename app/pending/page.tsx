@@ -122,6 +122,22 @@ export default function Pending() {
           <p className="text-sm text-gray-500 mt-6">
             This page will update automatically. We'll email you when a decision has been made.
           </p>
+          <p className="text-xs text-gray-400 mt-2">
+            ✓ Page polls every 5 seconds. Keep this window open to see real-time status updates.
+          </p>
+
+          {/* Navigation and help */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-500 mb-4">Need help? Contact support or return home.</p>
+            <div className="flex gap-3">
+              <button onClick={() => router.push('/')} className="flex-1 py-2 px-4 bg-[#1e3a5f] text-white rounded-lg font-medium">
+                Return Home
+              </button>
+              <button onClick={() => router.push('/')} className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium">
+                Contact Support
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>
