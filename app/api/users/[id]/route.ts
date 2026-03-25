@@ -13,7 +13,7 @@ export async function GET(
     const { id } = await params
     
     const { data, error } = await supabaseAdmin
-      .from('contractors')
+      .from('contractor_applications')
       .select('*')
       .eq('id', id)
       .single()
@@ -51,7 +51,7 @@ export async function PUT(
     if (updates.insuranceData) dbUpdates.insurance_url = updates.insuranceData
 
     const { data, error } = await supabaseAdmin
-      .from('contractors')
+      .from('contractor_applications')
       .update(dbUpdates)
       .eq('id', id)
       .select()
