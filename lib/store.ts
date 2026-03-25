@@ -1090,3 +1090,18 @@ export function loginWithCredentials(email: string, password: string): User | nu
   if (!validatePassword(password, user.passwordHash)) return null
   return user
 }
+// API-based user update functions
+export async function updateUserStatusAPI(userId: string, status: string): Promise<User | null> {
+  try {
+    const response = await fetch(`/api/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    })
+    if (!response.ok) return null
+    return await response.json()
+  } catch (error) {
+    console.error('Error updating user:', error)
+    return null
+  }
+}

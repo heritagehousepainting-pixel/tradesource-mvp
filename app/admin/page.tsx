@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsers, getPendingUsers, saveUser, User, approveContractor, rejectContractor, revokeContractor, getUserDocuments, UserDocuments } from '@/lib/store'
+import { getUsersAPI, saveUser, User, approveContractor, rejectContractor, revokeContractor, getUserDocuments, UserDocuments, updateUserStatusAPI } from '@/lib/store'
 
 // Simple admin code for MVP
 const ADMIN_CODE = 'TSADMIN2024'
@@ -19,9 +19,10 @@ export default function AdminPage() {
   const [expandedUser, setExpandedUser] = useState<string | null>(null)
   const [viewingDocument, setViewingDocument] = useState<{ name: string; data: string } | null>(null)
 
-  const loadUsers = () => {
-    setPendingUsers(getPendingUsers())
-    setAllUsers(getUsers())
+  const loadUsers = async () => {
+    const users = await getUsersAPI()
+    setPendingUsers(users.filter((u: User) => u.status === 'pending' || u.status === 'pending_review'))
+    setAllUsers(users)
   }
 
   useEffect(() => {
@@ -38,19 +39,19 @@ export default function AdminPage() {
     }
   }
 
-  const handleApprove = (userId: string) => {
-    const user = approveContractor(userId)
+  const handleApprove = async (userId: string) => {
+    const user = await updateUserStatusAPI(userId, 'approved')
     if (user) {
-      setNotification(`✅ Approved ${user.fullName}`)
+      setNotification(`✅ Approved ${user.name || user.email}`)
       setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
   }
 
-  const handleReject = (userId: string) => {
-    const user = rejectContractor(userId)
+  const handleReject = async (userId: string) => {
+    const user = await updateUserStatusAPI(userId, 'rejected')
     if (user) {
-      setNotification(`❌ Rejected ${user.fullName}`)
+      setNotification(`❌ Rejected ${user.name || user.email}`)
       setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
