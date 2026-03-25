@@ -178,6 +178,14 @@ export default function Home() {
                 >
                   Sign Out
                 </button>
+                {user && user.status === 'approved' && (
+                  <a
+                    href="/dashboard"
+                    className="text-sm text-[#1e3a5f] font-medium ml-2 hover:underline"
+                  >
+                    Dashboard
+                  </a>
+                )}
               </div>
             )}
           </div>
