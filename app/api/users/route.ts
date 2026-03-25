@@ -24,20 +24,24 @@ export async function GET() {
     
     const data = await response.json()
     
+    // Map to our User interface using ACTUAL schema fields
     const users = (data || []).map((app: any) => ({
       id: app.id,
       fullName: app.name,
       businessName: app.company || '',
       email: app.email,
       phone: app.phone || '',
-      licenseNumber: app.license_number || '',
-      yearsExperience: 0,
+      licenseNumber: '',  // Not in schema
+      yearsExperience: 0,  // Not in schema
       reviewLink: app.external_reviews || '',
       w9Data: null,
       insuranceData: null,
       status: app.status === 'approved' ? 'approved' : app.status === 'rejected' ? 'rejected' : 'pending',
       createdAt: app.created_at,
-      documents: {}
+      documents: {
+        w9: app.w9_doc_path ? { name: 'W-9', data: app.w9_doc_path, uploadedAt: app.created_at } : undefined,
+        insurance: app.insurance_doc_path ? { name: 'Insurance', data: app.insurance_doc_path, uploadedAt: app.created_at } : undefined
+      }
     }))
 
     return NextResponse.json(users)
@@ -55,17 +59,17 @@ export async function POST(request: Request) {
   try {
     const user = await request.json()
     
+    // Use ONLY fields that exist in the actual database schema
     const insertData = {
-      name: user.fullName || user.fullName || 'Unknown',
+      name: user.fullName || 'Unknown',
       email: user.email,
       company: user.businessName || '',
       phone: user.phone || '',
-      license_number: user.licenseNumber || '',
       external_reviews: user.reviewLink || '',
       status: 'pending'
     }
 
-    console.log('INSERTING:', JSON.stringify(insertData))
+    console.log('INSERTING with correct fields:', JSON.stringify(insertData))
 
     const response = await fetch(`${supabaseUrl}/rest/v1/contractor_applications`, {
       method: 'POST',
