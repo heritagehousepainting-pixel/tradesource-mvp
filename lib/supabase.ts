@@ -9,9 +9,10 @@ export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
-// Admin client for server-side operations (service role key)
-export const supabaseAdmin = supabaseUrl && supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
+// Admin client for server-side operations
+// Uses service role key if available, otherwise falls back to anon key (MVP acceptable)
+export const supabaseAdmin = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey)
   : null
 
 // Check if Supabase is configured
