@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey
 
 export async function GET() {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -11,19 +9,22 @@ export async function GET() {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const response = await fetch(`${supabaseUrl}/rest/v1/contractor_applications?select=*&order=created_at.desc`, {
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`
+      }
+    })
     
-    const { data, error } = await supabase
-      .from('contractor_applications')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('READ ERROR:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!response.ok) {
+      const err = await response.text()
+      console.error('READ ERROR:', err)
+      return NextResponse.json({ error: err }, { status: 500 })
     }
-
-    const users = (data || []).map(app => ({
+    
+    const data = await response.json()
+    
+    const users = (data || []).map((app: any) => ({
       id: app.id,
       fullName: app.name,
       businessName: app.company || '',
@@ -53,41 +54,50 @@ export async function POST(request: Request) {
 
   try {
     const user = await request.json()
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    const insertData = {
+      name: user.fullName || user.fullName || 'Unknown',
+      email: user.email,
+      company: user.businessName || '',
+      phone: user.phone || '',
+      license_number: user.licenseNumber || '',
+      external_reviews: user.reviewLink || '',
+      status: 'pending'
+    }
 
-    console.log('Creating user with data:', user)
+    console.log('INSERTING:', JSON.stringify(insertData))
 
-    const { data, error } = await supabase
-      .from('contractor_applications')
-      .insert([{
-        name: user.fullName || user.fullName,
-        email: user.email,
-        company: user.businessName || '',
-        phone: user.phone || '',
-        license_number: user.licenseNumber || '',
-        external_reviews: user.reviewLink || '',
-        status: user.status || 'pending'
-      }])
-      .select()
-      .single()
+    const response = await fetch(`${supabaseUrl}/rest/v1/contractor_applications`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(insertData)
+    })
 
-    if (error) {
-      console.error('INSERT ERROR:', error)
+    const responseText = await response.text()
+    console.log('RESPONSE STATUS:', response.status)
+    console.log('RESPONSE BODY:', responseText)
+
+    if (!response.ok) {
       return NextResponse.json({ 
         error: 'Failed to create user', 
-        details: error.message,
-        code: error.code 
+        details: responseText,
+        status: response.status
       }, { status: 500 })
     }
 
-    console.log('User created:', data)
+    const data = JSON.parse(responseText)
     return NextResponse.json({ 
       ...user, 
-      id: data.id,
-      createdAt: data.created_at 
+      id: data[0]?.id || 'unknown',
+      createdAt: data[0]?.created_at || new Date().toISOString()
     }, { status: 201 })
   } catch (error) {
     console.error('POST EXCEPTION:', error)
-    return NextResponse.json({ error: String(error), stack: error instanceof Error ? error.stack : null }, { status: 500 })
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }
