@@ -260,9 +260,9 @@ export default function Home() {
                 
                 {/* Density signals - Scale indicators */}
                 <div className="flex flex-wrap justify-center gap-3 text-xs">
-                  <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full">✓ {activity.newJobsToday} new today</span>
+                  <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full">✓ {activity.newJobsToday > 0 ? activity.newJobsToday + ' new today' : 'Network active'}</span>
                   <span className="bg-blue-500/20 text-blue-100 px-2 py-1 rounded-full">✓ {stats.jobsCompleted.toLocaleString()}+ jobs done</span>
-                  <span className="bg-purple-500/20 text-purple-100 px-2 py-1 rounded-full">✓ Growing daily</span>
+                  <span className="bg-purple-500/20 text-purple-100 px-2 py-1 rounded-full">✓ Growing network</span>
                 </div>
               </div>
 
@@ -272,7 +272,7 @@ export default function Home() {
                 <div className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1.5 mb-4">
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                   <span className="text-sm font-semibold text-red-700">
-                    {activity.newJobsLastHour > 0 ? `${activity.newJobsLastHour} jobs posted in the last hour` : '47 painters available now'}
+                    {activity.newJobsLastHour > 0 ? `${activity.newJobsLastHour} jobs posted in the last hour` : `${stats.totalPainters}+ painters available`}
                   </span>
                 </div>
                 
