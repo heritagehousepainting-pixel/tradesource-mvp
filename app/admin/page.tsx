@@ -20,9 +20,17 @@ export default function AdminPage() {
   const [viewingDocument, setViewingDocument] = useState<{ name: string; data: string } | null>(null)
 
   const loadUsers = async () => {
-    const users = await getUsersAPI()
-    setPendingUsers(users.filter((u: User) => u.status === 'pending' || u.status === 'pending_review'))
-    setAllUsers(users)
+    console.log('Loading users from API...')
+    try {
+      const users = await getUsersAPI()
+      console.log('Got users:', users.length)
+      const pending = users.filter((u: User) => u.status === 'pending' || u.status === 'pending_review')
+      console.log('Pending:', pending.length)
+      setPendingUsers(pending)
+      setAllUsers(users)
+    } catch (e) {
+      console.error('Error loading users:', e)
+    }
   }
 
   useEffect(() => {
