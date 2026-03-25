@@ -246,6 +246,26 @@ export default function AdminPage() {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-4">
+        {/* Metrics Row */}
+        <div className="grid grid-cols-4 gap-2 mb-6">
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-2xl font-bold text-gray-900">{allUsers.length}</div>
+            <div className="text-xs text-gray-500">Total</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-2xl font-bold text-green-600">{allUsers.filter((u: User) => u.status === 'approved').length}</div>
+            <div className="text-xs text-gray-500">Active</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-2xl font-bold text-yellow-600">{pendingUsers.length}</div>
+            <div className="text-xs text-gray-500">Pending</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-2xl font-bold text-blue-600">{allUsers.filter((u: User) => u.status === 'rejected').length}</div>
+            <div className="text-xs text-gray-500">Rejected</div>
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button

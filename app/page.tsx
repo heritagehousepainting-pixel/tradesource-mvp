@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser, logout, User, getNotifications, markAllNotificationsRead, getUnreadNotificationCount, updateLastVisit, getActivitySummary, checkAndGenerateNotifications, Notification, getPlatformStats, TESTIMONIALS } from '@/lib/store'
+import { getCurrentUser, logout, User, getNotifications, markAllNotificationsRead, getUnreadNotificationCount, updateLastVisit, getActivitySummary, checkAndGenerateNotifications, Notification, getPlatformStats, getPlatformStatsAPI, TESTIMONIALS } from '@/lib/store'
 
 // Surface detection hook for responsive layout
 function useSurface() {
@@ -55,7 +55,7 @@ export default function Home() {
     setActivity(getActivitySummary())
     
     // Load platform stats
-    setStats(getPlatformStats())
+    setStats(await getPlatformStatsAPI())
     
     // Load notifications
     setNotifications(getNotifications())
@@ -274,12 +274,12 @@ export default function Home() {
                 </div>
                 
                 <h2 className="text-3xl font-extrabold text-gray-900 mb-3 leading-tight">
-                  <span className="text-[#1e3a5f]">Trusted Painters.</span>
+                  <span className="text-[#1e3a5f]">A private network for</span>
                   <br />
-                  <span className="text-[#2563eb]">Available Now.</span>
+                  <span className="text-[#2563eb]">professional contractors</span>
                 </h2>
                 <p className="text-gray-600 mb-4 text-lg">
-                  When your crew doesn't show or you've got more work than you can handle — get <span className="font-semibold text-[#1e3a5f]">vetted, local painters</span> in minutes. Not hours.
+                  Share overflow work. Stay fully booked. Get <span className="font-semibold text-[#1e3a5f]">vetted, reliable painters</span> in minutes. Not hours.
                 </p>
                 
                 {/* Problem/Solution tags */}
@@ -391,6 +391,28 @@ export default function Home() {
                 </div>
                 <div className="relative flex justify-center text-sm">
                   <span className="px-4 bg-gray-50 text-gray-500">already a member?</span>
+                </div>
+              </div>
+
+              {/* How It Works Section - New */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="text-center font-bold text-gray-900 mb-4">How It Works</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-3">
+                    <div className="w-10 h-10 bg-[#1e3a5f] text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">1</div>
+                    <div className="text-sm font-medium text-gray-900">Apply</div>
+                    <div className="text-xs text-gray-500 mt-1">Submit your credentials for vetting</div>
+                  </div>
+                  <div className="p-3">
+                    <div className="w-10 h-10 bg-[#1e3a5f] text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">2</div>
+                    <div className="text-sm font-medium text-gray-900">Get Verified</div>
+                    <div className="text-xs text-gray-500 mt-1">We verify your license & insurance</div>
+                  </div>
+                  <div className="p-3">
+                    <div className="w-10 h-10 bg-[#1e3a5f] text-white rounded-full flex items-center justify-center mx-auto mb-2 font-bold">3</div>
+                    <div className="text-sm font-medium text-gray-900">Join Network</div>
+                    <div className="text-xs text-gray-500 mt-1">Access jobs and grow your business</div>
+                  </div>
                 </div>
               </div>
 

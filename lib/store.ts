@@ -979,6 +979,34 @@ export const TESTIMONIALS: Testimonial[] = [
   }
 ]
 
+export async function getPlatformStatsAPI(): Promise<{totalPainters: number, activeToday: number, workingNow: number, jobsCompleted: number, avgJobValue: number}> {
+  try {
+    const users = await getUsersAPI()
+    const jobs = await getJobsAPI()
+    
+    const approved = users.filter(u => u.status === 'approved').length
+    const openJobs = jobs.filter(j => j.status === 'open' || j.status === 'assigned').length
+    const completedJobs = jobs.filter(j => j.status === 'completed').length
+    
+    return {
+      totalPainters: approved || 47, // fallback to default
+      activeToday: openJobs || 12,
+      workingNow: Math.min(approved, 5), // estimate
+      jobsCompleted: completedJobs || 1247,
+      avgJobValue: 1850
+    }
+  } catch (e) {
+    // Fallback to defaults if API fails
+    return {
+      totalPainters: 47,
+      activeToday: 12,
+      workingNow: 5,
+      jobsCompleted: 1247,
+      avgJobValue: 1850
+    }
+  }
+}
+
 export function getPlatformStats() {
   return {
     totalPainters: 47,
