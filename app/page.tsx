@@ -262,7 +262,8 @@ export default function Home() {
                 <div className="flex flex-wrap justify-center gap-3 text-xs">
                   <span className="bg-green-500/20 text-green-100 px-2 py-1 rounded-full">✓ {activity.newJobsToday > 0 ? activity.newJobsToday + ' new today' : 'Network active'}</span>
                   <span className="bg-blue-500/20 text-blue-100 px-2 py-1 rounded-full">✓ {stats.jobsCompleted.toLocaleString()}+ jobs done</span>
-                  <span className="bg-purple-500/20 text-purple-100 px-2 py-1 rounded-full">✓ Growing network</span>
+                  <span className="bg-purple-500/20 text-purple-100 px-2 py-1 rounded-full">✓ {stats.workingNow}+ working now</span>
+                  <span className="bg-orange-500/20 text-orange-100 px-2 py-1 rounded-full">✓ {stats.totalPainters}+ verified</span>
                 </div>
               </div>
 
