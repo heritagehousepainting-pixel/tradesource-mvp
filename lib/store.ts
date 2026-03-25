@@ -993,7 +993,7 @@ export async function getPlatformStatsAPI(): Promise<{totalPainters: number, act
       totalPainters: approved > 20 ? approved : 47,  // Show real only if > 20
       activeToday: openJobs > 10 ? openJobs : 12,
       workingNow: Math.min(approved, 5),
-      jobsCompleted: completedJobs > 50 ? completedJobs : 1247,  // Premium fallback
+      jobsCompleted: completedJobs > 3 ? completedJobs : 1247,  // Show real if > 3
       avgJobValue: 1850
     }
   } catch (e) {
