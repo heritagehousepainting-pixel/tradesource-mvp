@@ -118,19 +118,17 @@ async function fetchAPI<T>(url: string, options?: RequestInit): Promise<T | null
   }
 }
 
-// Users - API with localStorage fallback
+// Users - API ONLY (no localStorage fallback - Supabase is single source of truth)
 export async function getUsersAPI(): Promise<User[]> {
-  if (isUsingAPI()) {
-    const users = await fetchAPI<User[]>('/api/users')
-    if (users) {
-      usersCache = users
-      return users
-    }
+  // Always use API - no localStorage fallback in production
+  const users = await fetchAPI<User[]>('/api/users')
+  if (users) {
+    usersCache = users
+    return users
   }
-  // Fallback to localStorage
-  if (typeof window === 'undefined') return []
-  const data = localStorage.getItem(STORAGE_KEYS.USERS)
-  return data ? JSON.parse(data) : []
+  // If API fails, return empty rather than fall back to localStorage
+  console.warn('API fetch failed, returning empty array (no fallback)')
+  return []
 }
 
 export async function saveUserAPI(user: User): Promise<void> {
@@ -162,18 +160,15 @@ export async function saveUserAPI(user: User): Promise<void> {
 }
 
 // Jobs - API with localStorage fallback
+// Jobs - API ONLY (no localStorage fallback - Supabase is single source of truth)
 export async function getJobsAPI(): Promise<Job[]> {
-  if (isUsingAPI()) {
-    const jobs = await fetchAPI<Job[]>('/api/jobs')
-    if (jobs) {
-      jobsCache = jobs
-      return jobs
-    }
+  const jobs = await fetchAPI<Job[]>('/api/jobs')
+  if (jobs) {
+    jobsCache = jobs
+    return jobs
   }
-  // Fallback to localStorage
-  if (typeof window === 'undefined') return []
-  const data = localStorage.getItem(STORAGE_KEYS.JOBS)
-  return data ? JSON.parse(data) : []
+  console.warn('API fetch failed, returning empty array (no fallback)')
+  return []
 }
 
 export async function saveJobAPI(job: Job): Promise<void> {
@@ -205,20 +200,16 @@ export async function saveJobAPI(job: Job): Promise<void> {
 }
 
 // Notifications - API with localStorage fallback
+// Notifications - API ONLY (no localStorage fallback)
 export async function getNotificationsAPI(userId?: string): Promise<Notification[]> {
-  if (isUsingAPI()) {
-    const url = userId ? `/api/notifications?userId=${userId}` : '/api/notifications'
-    const notifications = await fetchAPI<Notification[]>(url)
-    if (notifications) {
-      notificationsCache = notifications
-      return notifications
-    }
+  const url = userId ? `/api/notifications?userId=${userId}` : '/api/notifications'
+  const notifications = await fetchAPI<Notification[]>(url)
+  if (notifications) {
+    notificationsCache = notifications
+    return notifications
   }
-  // Fallback to localStorage
-  if (typeof window === 'undefined') return []
-  const data = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)
-  const all: Notification[] = data ? JSON.parse(data) : []
-  return userId ? all.filter(n => n.userId === userId) : all
+  console.warn('API fetch failed, returning empty array (no fallback)')
+  return []
 }
 
 export async function saveNotificationAPI(notification: Notification): Promise<void> {
