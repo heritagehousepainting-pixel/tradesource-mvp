@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUsersAPI, saveUser, User, approveContractor, rejectContractor, revokeContractor, getUserDocuments, UserDocuments, updateUserStatusAPI } from '@/lib/store'
+import { getUsersAPI, saveUser, User, getUserDocuments, UserDocuments, updateUserStatusAPI } from '@/lib/store'
 
 // Simple admin code for MVP
 const ADMIN_CODE = 'TSADMIN2024'
@@ -65,10 +65,10 @@ export default function AdminPage() {
     }
   }
 
-  const handleRevoke = (userId: string) => {
-    const user = revokeContractor(userId)
+  const handleRevoke = async (userId: string) => {
+    const user = await updateUserStatusAPI(userId, 'rejected')
     if (user) {
-      setNotification(`🔄 Revoked access for ${user.fullName}`)
+      setNotification(`🔄 Revoked access for ${(user as any).fullName || (user as any).email}`)
       setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
