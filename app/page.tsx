@@ -40,28 +40,31 @@ export default function Home() {
   const [stats, setStats] = useState({ totalPainters: 0, activeToday: 0, workingNow: 0, jobsCompleted: 0, avgJobValue: 0 })
 
   useEffect(() => {
-    const currentUser = getCurrentUser()
-    setUser(currentUser)
-    
-    // Update last visit for habit tracking
-    updateLastVisit()
-    
-    // Check for new notifications if user is logged in
-    if (currentUser && currentUser.status === 'approved') {
-      checkAndGenerateNotifications(currentUser.id)
+    const init = async () => {
+      const currentUser = getCurrentUser()
+      setUser(currentUser)
+      
+      // Update last visit for habit tracking
+      updateLastVisit()
+      
+      // Check for new notifications if user is logged in
+      if (currentUser && currentUser.status === 'approved') {
+        checkAndGenerateNotifications(currentUser.id)
+      }
+      
+      // Load activity summary
+      setActivity(getActivitySummary())
+      
+      // Load platform stats
+      setStats(await getPlatformStatsAPI())
+      
+      // Load notifications
+      setNotifications(getNotifications())
+      setUnreadCount(getUnreadNotificationCount())
+      
+      setLoading(false)
     }
-    
-    // Load activity summary
-    setActivity(getActivitySummary())
-    
-    // Load platform stats
-    setStats(await getPlatformStatsAPI())
-    
-    // Load notifications
-    setNotifications(getNotifications())
-    setUnreadCount(getUnreadNotificationCount())
-    
-    setLoading(false)
+    init()
   }, [])
 
   const handleLogout = () => {

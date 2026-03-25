@@ -24,7 +24,7 @@ export default function AdminPage() {
     try {
       const users = await getUsersAPI()
       console.log('Got users:', users.length)
-      const pending = users.filter((u: User) => u.status === 'pending' || u.status === 'pending_review')
+      const pending = users.filter((u: User) => u.status === 'pending')
       console.log('Pending:', pending.length)
       setPendingUsers(pending)
       setAllUsers(users)
@@ -50,7 +50,7 @@ export default function AdminPage() {
   const handleApprove = async (userId: string) => {
     const user = await updateUserStatusAPI(userId, 'approved')
     if (user) {
-      setNotification(`✅ Approved ${user.name || user.email}`)
+      setNotification(`✅ Approved ${(user as any).name || (user as any).email}`)
       setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
@@ -59,7 +59,7 @@ export default function AdminPage() {
   const handleReject = async (userId: string) => {
     const user = await updateUserStatusAPI(userId, 'rejected')
     if (user) {
-      setNotification(`❌ Rejected ${user.name || user.email}`)
+      setNotification(`❌ Rejected ${(user as any).name || (user as any).email}`)
       setTimeout(() => setNotification(null), 3000)
       loadUsers()
     }
